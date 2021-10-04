@@ -1,0 +1,91 @@
+before:
+  hooks:
+
+builds:
+  - id: aserto-idp-plugin-auth0
+    main: ./cmd/aserto-idp-plugin-auth0
+    binary: aserto-idp-plugin-auth0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s
+      - -w
+      - -X pkg/config.ver={{.Version}}
+      - -X pkg/config.commit={{.ShortCommit}}
+      - -X pkg/config.date={{.Date}}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    no_unique_dist_dir: true
+
+archives:
+  - format: zip
+    replacements:
+      darwin: darwin
+      linux: linux
+      windows: windows
+      amd64: x86_64
+    files:
+      - LICENSE
+      - README.md
+    name_template: "aserto-idp{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  name_template: "{{ .Tag }}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+release:
+  github:
+    owner: aserto-dev
+    name: aserto-idp-plugin-auth0
+
+  draft: false
+  prerelease: false
+  name_template: "aserto-idp-plugin-auth0 {{.Tag}}"
+
+brews:
+  - name: aserto-idp-plugin-auth0
+
+    tap:
+      owner: aserto-dev
+      name: aserto-tap
+      token: "{{ .Env.ASERTO_TAP }}"
+
+    url_template: "https://github.com/aserto-dev/aserto-idp-plugin-auth0/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    download_strategy: CustomGitHubPrivateRepositoryReleaseDownloadStrategy
+    custom_require: "lib/custom_download_strategy"
+
+    commit_author:
+      name: Aserto Bot
+      email: github-bot@aserto.com
+
+    homepage: "https://aserto.com/"
+
+    description: "aserto idp plugin for importing and exporting users to/from a auth0 file."
+
+    license: "Apache License Version 2.0"
+
+    skip_upload: false
+
+    test: |
+      system "#{bin}/aserto-idp-plugin-auth0 version"
+
+    install: |
+      bin.install "aserto-idp-plugin-auth0"
