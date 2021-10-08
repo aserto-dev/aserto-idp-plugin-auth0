@@ -24,6 +24,19 @@ type Auth0Config struct {
 }
 
 func (c *Auth0Config) Validate() error {
+
+	if c.Domain == "" {
+		return status.Error(codes.InvalidArgument, "no domain was provided")
+	}
+
+	if c.ClientID == "" {
+		return status.Error(codes.InvalidArgument, "no client id was provided")
+	}
+
+	if c.ClientSecret == "" {
+		return status.Error(codes.InvalidArgument, "no client secret was provided")
+	}
+
 	mgnt, err := management.New(
 		c.Domain,
 		management.WithClientCredentials(

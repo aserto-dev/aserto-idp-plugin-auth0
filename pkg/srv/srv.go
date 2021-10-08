@@ -167,7 +167,6 @@ func (s *Auth0Plugin) waitJob(jobID string) error {
 			return fmt.Errorf("Unknown status")
 		}
 	}
-	return nil
 }
 
 func (s *Auth0Plugin) startJob() error {
