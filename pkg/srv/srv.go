@@ -11,6 +11,8 @@ import (
 	api "github.com/aserto-dev/go-grpc/aserto/api/v1"
 	"github.com/aserto-dev/idp-plugin-sdk/plugin"
 	multierror "github.com/hashicorp/go-multierror"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"gopkg.in/auth0.v5"
 	"gopkg.in/auth0.v5/management"
 )
@@ -29,6 +31,7 @@ type Auth0Plugin struct {
 	users        []map[string]interface{}
 	connectionID string
 	wg           sync.WaitGroup
+	op           plugin.OperationType
 }
 
 func NewAuth0Plugin() *Auth0Plugin {
@@ -41,7 +44,7 @@ func (s *Auth0Plugin) GetConfig() plugin.PluginConfig {
 	return &Auth0Config{}
 }
 
-func (s *Auth0Plugin) Open(cfg plugin.PluginConfig) error {
+func (s *Auth0Plugin) Open(cfg plugin.PluginConfig, operation plugin.OperationType) error {
 	config, ok := cfg.(*Auth0Config)
 	if !ok {
 		return errors.New("invalid config")
@@ -49,6 +52,7 @@ func (s *Auth0Plugin) Open(cfg plugin.PluginConfig) error {
 	s.Config = config
 	s.page = 0
 	s.finishedRead = false
+	s.op = operation
 
 	mgnt, err := management.New(
 		config.Domain,
@@ -126,23 +130,37 @@ func (s *Auth0Plugin) Write(user *api.User) error {
 	return nil
 }
 
+func (s *Auth0Plugin) Delete(userId string) error {
+	if s.mgmt == nil {
+		return status.Error(codes.Internal, "auth0 management client not initialized")
+	}
+
+	return s.mgmt.User.Delete(userId)
+}
+
 func (s *Auth0Plugin) Close() error {
-	if len(s.users) > 0 {
-		err := s.startJob()
+	switch s.op {
+	case plugin.OperationTypeWrite:
+		{
+			if len(s.users) > 0 {
+				err := s.startJob()
 
-		if err != nil {
-			return err
+				if err != nil {
+					return err
+				}
+			}
+
+			var errs error
+			for _, j := range s.jobs {
+				jobID := auth0.StringValue(j.ID)
+				err := s.waitJob(jobID)
+				if err != nil {
+					errs = multierror.Append(errs, err)
+				}
+			}
 		}
 	}
 
-	var errs error
-	for _, j := range s.jobs {
-		jobID := auth0.StringValue(j.ID)
-		err := s.waitJob(jobID)
-		if err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
 	return nil
 }
 

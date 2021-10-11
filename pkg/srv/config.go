@@ -18,9 +18,9 @@ func GetVersion() (string, string, string) {
 }
 
 type Auth0Config struct {
-	Domain       string `description:"Auth0 domain" kind:"attribute" mode:"normal" readonly:"false"`
-	ClientID     string `description:"Auth0 Client ID" kind:"attribute" mode:"normal" readonly:"false"`
-	ClientSecret string `description:"Auth0 Client Secret" kind:"attribute" mode:"normal" readonly:"false"`
+	Domain       string `description:"Auth0 domain" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_domain"`
+	ClientID     string `description:"Auth0 Client ID" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_client_id"`
+	ClientSecret string `description:"Auth0 Client Secret" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_client_secret"`
 }
 
 func (c *Auth0Config) Validate() error {
