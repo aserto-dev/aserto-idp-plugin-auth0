@@ -1,0 +1,37 @@
+package srv
+
+import (
+	"reflect"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"gopkg.in/auth0.v5/management"
+)
+
+func TestTransformToAuth0(t *testing.T) {
+	assert := require.New(t)
+	apiUser := CreateTestApiUser("1", "Name", "email", "pic")
+
+	auth0User := TransformToAuth0(apiUser)
+
+	assert.True(reflect.TypeOf(*auth0User) == reflect.TypeOf(management.User{}), "the returned object should be *management.User")
+	assert.Equal("Name", (*auth0User).GetNickname(), "should correctly detect the nickname")
+	assert.Equal("email", (*auth0User).GetEmail(), "should correctly populate the email")
+	assert.Equal("pic", (*auth0User).GetPicture(), "should correctly populate the email")
+}
+
+func TestTransform(t *testing.T) {
+	assert := require.New(t)
+	auth0User := CreateTestAuth0User("1", "Name", "email", "pic", "+40722332233", "userName")
+
+	apiUser := Transform(auth0User)
+
+	assert.Equal("1", apiUser.Id, "should correctly populate the id")
+	assert.Equal("Name", apiUser.DisplayName, "should correctly detect the displayname")
+	assert.Equal("email", apiUser.Email, "should correctly populate the email")
+	assert.Equal("pic", apiUser.Picture, "should correctly populate the email")
+	assert.Equal(4, len(apiUser.Identities))
+	assert.Equal("auth0", apiUser.Identities["userName"].Provider)
+	assert.False(apiUser.Identities["userName"].Verified)
+	assert.Equal("+40722332233", apiUser.Attributes.Properties.Fields["phoneNumber"].GetStringValue())
+}

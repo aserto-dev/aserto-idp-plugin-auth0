@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/config"
 	api "github.com/aserto-dev/go-grpc/aserto/api/v1"
 	"github.com/aserto-dev/idp-plugin-sdk/plugin"
 	multierror "github.com/hashicorp/go-multierror"
@@ -22,7 +23,7 @@ const (
 )
 
 type Auth0Plugin struct {
-	Config       *Auth0Config
+	Config       *config.Auth0Config
 	mgmt         *management.Management
 	page         int
 	finishedRead bool
@@ -36,16 +37,16 @@ type Auth0Plugin struct {
 
 func NewAuth0Plugin() *Auth0Plugin {
 	return &Auth0Plugin{
-		Config: &Auth0Config{},
+		Config: &config.Auth0Config{},
 	}
 }
 
 func (s *Auth0Plugin) GetConfig() plugin.PluginConfig {
-	return &Auth0Config{}
+	return &config.Auth0Config{}
 }
 
 func (s *Auth0Plugin) Open(cfg plugin.PluginConfig, operation plugin.OperationType) error {
-	config, ok := cfg.(*Auth0Config)
+	config, ok := cfg.(*config.Auth0Config)
 	if !ok {
 		return errors.New("invalid config")
 	}
@@ -90,10 +91,7 @@ func (s *Auth0Plugin) Read() ([]*api.User, error) {
 	var errs error
 	var users []*api.User
 	for _, u := range ul.Users {
-		user, err := Transform(u)
-		if err != nil {
-			errs = multierror.Append(errs, err)
-		}
+		user := Transform(u)
 
 		users = append(users, user)
 	}
@@ -106,10 +104,7 @@ func (s *Auth0Plugin) Read() ([]*api.User, error) {
 }
 
 func (s *Auth0Plugin) Write(user *api.User) error {
-	u, err := TransformToAuth0(user)
-	if err != nil {
-		return err
-	}
+	u := TransformToAuth0(user)
 
 	userMap, size, err := structToMap(u)
 	if err != nil {
@@ -178,11 +173,11 @@ func (s *Auth0Plugin) waitJob(jobID string) error {
 				continue
 			}
 		case "failed":
-			return fmt.Errorf("Job %s failed", jobID)
+			return fmt.Errorf("job %s failed", jobID)
 		case "completed":
 			return nil
 		default:
-			return fmt.Errorf("Unknown status")
+			return fmt.Errorf("unknown status")
 		}
 	}
 }

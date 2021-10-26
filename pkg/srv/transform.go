@@ -15,7 +15,7 @@ const (
 	provider = "auth0"
 )
 
-func TransformToAuth0(in *api.User) (*management.User, error) {
+func TransformToAuth0(in *api.User) *management.User {
 	// TODO: add more data here
 	user := management.User{
 		ID:           auth0.String(in.Id),
@@ -24,11 +24,11 @@ func TransformToAuth0(in *api.User) (*management.User, error) {
 		Picture:      auth0.String(in.Picture),
 		UserMetadata: make(map[string]interface{}),
 	}
-	return &user, nil
+	return &user
 }
 
 // Transform Auth0 user definition into Aserto Edge User object definition.
-func Transform(in *management.User) (*api.User, error) {
+func Transform(in *management.User) *api.User {
 
 	uid := strings.ToLower(strings.TrimPrefix(*in.ID, "auth0|"))
 
@@ -67,6 +67,7 @@ func Transform(in *management.User) (*api.User, error) {
 		phone := in.UserMetadata[phoneProp].(string)
 		user.Identities[phone] = &api.IdentitySource{
 			Kind:     api.IdentityKind_IDENTITY_KIND_PHONE,
+			Provider: provider,
 			Verified: false,
 		}
 	}
@@ -76,6 +77,7 @@ func Transform(in *management.User) (*api.User, error) {
 		username := in.UserMetadata[usernameProp].(string)
 		user.Identities[username] = &api.IdentitySource{
 			Kind:     api.IdentityKind_IDENTITY_KIND_USERNAME,
+			Provider: provider,
 			Verified: false,
 		}
 	}
@@ -87,5 +89,5 @@ func Transform(in *management.User) (*api.User, error) {
 		}
 	}
 
-	return &user, nil
+	return &user
 }
