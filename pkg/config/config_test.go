@@ -1,6 +1,7 @@
 package config
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -59,7 +60,8 @@ func TestValidateWithInvalidCredentials(t *testing.T) {
 	err := config.Validate()
 
 	assert.NotNil(err)
-	assert.Equal("rpc error: code = Internal desc = failed to get Auth0 connection", err.Error())
+	r, _ := regexp.Compile("Internal desc = failed to get Auth0 connection")
+	assert.Regexp(r, err.Error())
 }
 
 func TestDescription(t *testing.T) {

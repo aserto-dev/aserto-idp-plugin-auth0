@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/aserto-dev/go-grpc v0.0.10
+	github.com/aserto-dev/go-utils v0.0.11
 	github.com/aserto-dev/idp-plugin-sdk v0.0.2
 	github.com/aserto-dev/mage-loot v0.4.12
 	github.com/hashicorp/go-multierror v1.0.0

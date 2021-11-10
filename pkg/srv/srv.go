@@ -68,7 +68,7 @@ func (s *Auth0Plugin) Open(cfg plugin.PluginConfig, operation plugin.OperationTy
 
 	s.mgmt = mgnt
 
-	c, err := mgnt.Connection.ReadByName("Username-Password-Authentication")
+	c, err := mgnt.Connection.ReadByName(config.ConnectionName)
 	if err != nil {
 		return err
 	}
