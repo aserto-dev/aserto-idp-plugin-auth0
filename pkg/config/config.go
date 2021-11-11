@@ -18,9 +18,10 @@ func GetVersion() (string, string, string) {
 }
 
 type Auth0Config struct {
-	Domain       string `description:"Auth0 domain" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_domain"`
-	ClientID     string `description:"Auth0 Client ID" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_client_id"`
-	ClientSecret string `description:"Auth0 Client Secret" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_client_secret"`
+	Domain         string `description:"Auth0 domain" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_domain"`
+	ClientID       string `description:"Auth0 Client ID" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_client_id"`
+	ClientSecret   string `description:"Auth0 Client Secret" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_client_secret"`
+	ConnectionName string `description:"Auth0 database connection name" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_connection_name"`
 }
 
 func (c *Auth0Config) Validate() error {
@@ -37,6 +38,10 @@ func (c *Auth0Config) Validate() error {
 		return status.Error(codes.InvalidArgument, "no client secret was provided")
 	}
 
+	if c.ConnectionName == "" {
+		c.ConnectionName = "Username-Password-Authentication"
+	}
+
 	mgnt, err := management.New(
 		c.Domain,
 		management.WithClientCredentials(
@@ -44,12 +49,12 @@ func (c *Auth0Config) Validate() error {
 			c.ClientSecret,
 		))
 	if err != nil {
-		return status.Error(codes.Internal, "failed to connect to Auth0")
+		return status.Errorf(codes.Internal, "failed to connect to Auth0, %s", err.Error())
 	}
 
-	_, err = mgnt.Connection.ReadByName("Username-Password-Authentication")
+	_, err = mgnt.Connection.ReadByName(c.ConnectionName)
 	if err != nil {
-		return status.Error(codes.Internal, "failed to get Auth0 connection")
+		return status.Errorf(codes.Internal, "failed to get Auth0 connection, %s", err.Error())
 	}
 
 	return nil

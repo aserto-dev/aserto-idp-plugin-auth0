@@ -63,6 +63,8 @@ jobs:
         run: |
           go run mage.go lint
       - name: Test
+        env:
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
         run: |
           go run mage.go test
       - name: Upload code coverage
