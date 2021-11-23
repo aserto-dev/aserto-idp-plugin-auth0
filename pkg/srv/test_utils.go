@@ -11,7 +11,7 @@ import (
 	"gopkg.in/auth0.v5/management"
 )
 
-func CreateTestApiUser(id, displayName, email, picture string) *api.User {
+func CreateTestApiUser(id, displayName, email, picture, username string) *api.User {
 	user := api.User{
 		Id:          id,
 		DisplayName: displayName,
@@ -28,6 +28,14 @@ func CreateTestApiUser(id, displayName, email, picture string) *api.User {
 			CreatedAt: timestamppb.New(time.Now()),
 			UpdatedAt: timestamppb.New(time.Now()),
 		},
+	}
+
+	if username != "" {
+		user.Identities[username] = &api.IdentitySource{
+			Kind:     api.IdentityKind_IDENTITY_KIND_USERNAME,
+			Provider: "auth0",
+			Verified: false,
+		}
 	}
 
 	return &user

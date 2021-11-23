@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	api "github.com/aserto-dev/go-grpc/aserto/api/v1"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -15,7 +17,7 @@ const (
 	provider = "auth0"
 )
 
-func TransformToAuth0(in *api.User) *management.User {
+func TransformToAuth0(in *api.User, usernameReq bool, max, min int) (*management.User, error) {
 	// TODO: add more data here
 	user := management.User{
 		ID:           auth0.String(in.Id),
@@ -24,7 +26,30 @@ func TransformToAuth0(in *api.User) *management.User {
 		Picture:      auth0.String(in.Picture),
 		UserMetadata: make(map[string]interface{}),
 	}
-	return &user
+
+	var username string
+	for key, value := range in.Identities {
+		if value.Kind == api.IdentityKind_IDENTITY_KIND_USERNAME {
+			username = key
+		}
+	}
+
+	if usernameReq {
+		if username != "" {
+			runes := []rune(username)
+
+			if len(runes) < max && len(runes) > min {
+				user.Username = auth0.String(username)
+			} else {
+				return nil, status.Errorf(codes.Internal, "username for user %s doesn't have the correct length %d - %d", in.DisplayName, min, max)
+			}
+		} else {
+			return nil, status.Errorf(codes.Internal, "username required is enabled, failed to populate username for user %s", in.DisplayName)
+		}
+
+	}
+
+	return &user, nil
 }
 
 // Transform Auth0 user definition into Aserto Edge User object definition.

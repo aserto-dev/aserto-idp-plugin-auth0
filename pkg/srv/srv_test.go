@@ -9,6 +9,7 @@ import (
 	"github.com/aserto-dev/go-utils/testutil"
 	"github.com/aserto-dev/idp-plugin-sdk/plugin"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/auth0.v5/management"
 )
 
 func CreateConfig() config.Auth0Config {
@@ -17,6 +18,10 @@ func CreateConfig() config.Auth0Config {
 		ClientID:     testutil.VaultValue("auth0-idp-test-account.client-id"),
 		ClientSecret: testutil.VaultValue("auth0-idp-test-account.client-secret"),
 	}
+}
+
+func CreateAuth0Connection(options interface{}) *management.Connection {
+	return &management.Connection{Options: options}
 }
 
 func TestOpen(t *testing.T) {
@@ -37,7 +42,7 @@ func TestOpen(t *testing.T) {
 func TestWrite(t *testing.T) {
 	assert := require.New(t)
 
-	apiUser := CreateTestApiUser("2ff319e101e1", "Test User", "user@test.com", "https://github.com/aserto-demo/contoso-ad-sample/raw/main/UserImages/Euan%20Garden.jpg")
+	apiUser := CreateTestApiUser("2ff319e101e1", "Test User", "user@test.com", "https://github.com/aserto-demo/contoso-ad-sample/raw/main/UserImages/Euan%20Garden.jpg", "")
 	config := CreateConfig()
 	err := config.Validate()
 	assert.Nil(err)
@@ -111,4 +116,75 @@ func TestDelete(t *testing.T) {
 
 	err = auth0Plugin.Close()
 	assert.Nil(err)
+}
+
+func TestRequiresUsernameWithNilOptions(t *testing.T) {
+	assert := require.New(t)
+	conn := CreateAuth0Connection(nil)
+
+	required, max, min := requiresUsername(conn)
+	assert.False(required)
+	assert.Equal(0, max)
+	assert.Equal(0, min)
+}
+
+func TestRequiresUsernameWithEmptyOptions(t *testing.T) {
+	assert := require.New(t)
+	connOptions := &management.ConnectionOptions{}
+	conn := CreateAuth0Connection(connOptions)
+
+	required, max, min := requiresUsername(conn)
+	assert.False(required)
+	assert.Equal(0, max)
+	assert.Equal(0, min)
+}
+
+func TestRequiresUsernameWithOtherValidationOptions(t *testing.T) {
+	assert := require.New(t)
+	connOptions := &management.ConnectionOptions{Validation: map[string]interface{}{"verify": true}}
+	conn := CreateAuth0Connection(connOptions)
+
+	required, max, min := requiresUsername(conn)
+	assert.False(required)
+	assert.Equal(0, max)
+	assert.Equal(0, min)
+}
+
+func TestRequiresUsernameWithNoLimitOptions(t *testing.T) {
+	assert := require.New(t)
+	connOptions := &management.ConnectionOptions{Validation: map[string]interface{}{"username": true}}
+	conn := CreateAuth0Connection(connOptions)
+
+	required, max, min := requiresUsername(conn)
+	assert.True(required)
+	assert.Equal(15, max)
+	assert.Equal(1, min)
+}
+
+func TestRequiresUsernameWithInvalidLimitOptions(t *testing.T) {
+	assert := require.New(t)
+	limitMap := map[string]interface{}{"min": "4"}
+	connOptions := &management.ConnectionOptions{
+		Validation: map[string]interface{}{"username": limitMap},
+	}
+	conn := CreateAuth0Connection(connOptions)
+
+	required, max, min := requiresUsername(conn)
+	assert.True(required)
+	assert.Equal(15, max)
+	assert.Equal(1, min)
+}
+
+func TestRequiresUsernameWithLimitOptions(t *testing.T) {
+	assert := require.New(t)
+	limitMap := map[string]interface{}{"min": float64(4), "max": float64(20)}
+	connOptions := &management.ConnectionOptions{
+		Validation: map[string]interface{}{"username": limitMap},
+	}
+	conn := CreateAuth0Connection(connOptions)
+
+	required, max, min := requiresUsername(conn)
+	assert.True(required)
+	assert.Equal(20, max)
+	assert.Equal(4, min)
 }

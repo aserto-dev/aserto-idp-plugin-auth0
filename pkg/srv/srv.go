@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"sync"
 	"time"
 
@@ -33,6 +34,9 @@ type Auth0Plugin struct {
 	connectionID string
 	wg           sync.WaitGroup
 	op           plugin.OperationType
+	required     bool
+	min          int
+	max          int
 }
 
 func NewAuth0Plugin() *Auth0Plugin {
@@ -78,6 +82,8 @@ func (s *Auth0Plugin) Open(cfg plugin.PluginConfig, operation plugin.OperationTy
 		return err
 	}
 
+	s.required, s.max, s.min = requiresUsername(c)
+
 	s.connectionID = auth0.StringValue(c.ID)
 	return nil
 }
@@ -109,7 +115,11 @@ func (s *Auth0Plugin) Read() ([]*api.User, error) {
 }
 
 func (s *Auth0Plugin) Write(user *api.User) error {
-	u := TransformToAuth0(user)
+	u, err := TransformToAuth0(user, s.required, s.max, s.min)
+
+	if err != nil {
+		return err
+	}
 
 	userMap, size, err := structToMap(u)
 	if err != nil {
@@ -217,4 +227,36 @@ func structToMap(in interface{}) (map[string]interface{}, int64, error) {
 	}
 	size := int64(len(data))
 	return res, size, nil
+}
+
+func requiresUsername(conn *management.Connection) (bool, int, int) {
+	options := conn.Options
+
+	if options != nil {
+		opt, ok := options.(*management.ConnectionOptions)
+
+		if ok && len(opt.Validation) > 0 {
+
+			if opt.Validation["username"] != nil {
+
+				limits, ok := opt.Validation["username"].(map[string]interface{})
+
+				if ok {
+					max, ok1 := limits["max"].(float64)
+					min, ok2 := limits["min"].(float64)
+					if ok1 && ok2 {
+						return true, int(math.Round(max)), int(math.Round(min))
+					} else {
+						// couldn't read username limits, returning defaults
+						return true, 15, 1
+					}
+				} else {
+					// couldn't read username limits, returning defaults
+					return true, 15, 1
+				}
+			}
+		}
+	}
+
+	return false, 0, 0
 }
