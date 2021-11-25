@@ -30,8 +30,9 @@ func TestOpen(t *testing.T) {
 	err = auth0Plugin.Open(&config, plugin.OperationTypeRead)
 	assert.Nil(err)
 
-	err = auth0Plugin.Close()
+	stats, err := auth0Plugin.Close()
 	assert.Nil(err)
+	assert.Nil(stats)
 }
 
 func TestWrite(t *testing.T) {
@@ -49,8 +50,12 @@ func TestWrite(t *testing.T) {
 	err = auth0Plugin.Write(apiUser)
 	assert.Nil(err)
 
-	err = auth0Plugin.Close()
+	stats, err := auth0Plugin.Close()
 	assert.Nil(err)
+	assert.NotNil(stats)
+	assert.Equal(int32(1), stats.Received)
+	assert.Equal(int32(1), stats.Created)
+	assert.Equal(int32(0), stats.Errors)
 }
 
 func TestRead(t *testing.T) {
@@ -72,8 +77,9 @@ func TestRead(t *testing.T) {
 	assert.NotNil(err)
 	assert.Equal(io.EOF, err)
 
-	err = auth0Plugin.Close()
+	stats, err := auth0Plugin.Close()
 	assert.Nil(err)
+	assert.Nil(stats)
 }
 
 func TestDelete(t *testing.T) {
@@ -100,8 +106,9 @@ func TestDelete(t *testing.T) {
 	}
 	assert.NotNil(testUser)
 
-	err = auth0Plugin.Close()
+	stats, err := auth0Plugin.Close()
 	assert.Nil(err)
+	assert.Nil(stats)
 
 	err = auth0Plugin.Open(&config, plugin.OperationTypeDelete)
 	assert.Nil(err)
@@ -109,6 +116,7 @@ func TestDelete(t *testing.T) {
 	err = auth0Plugin.Delete("auth0|" + testUser.Id)
 	assert.Nil(err)
 
-	err = auth0Plugin.Close()
+	stats, err = auth0Plugin.Close()
 	assert.Nil(err)
+	assert.Nil(stats)
 }

@@ -3,10 +3,10 @@ module github.com/aserto-dev/aserto-idp-plugin-auth0
 go 1.16
 
 require (
-	github.com/aserto-dev/go-grpc v0.0.10
+	github.com/aserto-dev/go-grpc v0.0.26
 	github.com/aserto-dev/go-utils v0.0.11
-	github.com/aserto-dev/idp-plugin-sdk v0.0.2
-	github.com/aserto-dev/mage-loot v0.4.12
+	github.com/aserto-dev/idp-plugin-sdk v0.0.3
+	github.com/aserto-dev/mage-loot v0.4.16
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/magefile/mage v1.11.0
 	github.com/stretchr/testify v1.7.0

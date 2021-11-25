@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"sync"
 	"time"
 
@@ -138,7 +139,7 @@ func (s *Auth0Plugin) Delete(userId string) error {
 	return s.mgmt.User.Delete(userId)
 }
 
-func (s *Auth0Plugin) Close() error {
+func (s *Auth0Plugin) Close() (*plugin.Stats, error) {
 	switch s.op {
 	case plugin.OperationTypeWrite:
 		{
@@ -146,22 +147,29 @@ func (s *Auth0Plugin) Close() error {
 				err := s.startJob()
 
 				if err != nil {
-					return err
+					return nil, err
 				}
 			}
 
 			var errs error
+			stats := &plugin.Stats{}
 			for _, j := range s.jobs {
 				jobID := auth0.StringValue(j.ID)
 				err := s.waitJob(jobID)
 				if err != nil {
 					errs = multierror.Append(errs, err)
+				} else {
+					auth0Stats, err := retrieveJobSummary(s.mgmt, jobID)
+					if err == nil {
+						stats = appendStats(stats, auth0Stats)
+					}
 				}
 			}
+			return stats, errs
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (s *Auth0Plugin) waitJob(jobID string) error {
@@ -217,4 +225,63 @@ func structToMap(in interface{}) (map[string]interface{}, int64, error) {
 	}
 	size := int64(len(data))
 	return res, size, nil
+}
+
+func retrieveJobSummary(mngmt *management.Management, jobID string) (map[string]interface{}, error) {
+	job := &management.Job{}
+	req, err := mngmt.NewRequest("GET", mngmt.URI("jobs", jobID), job)
+
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := mngmt.Do(req)
+
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+
+	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
+		return nil, fmt.Errorf("request failed, status code: %d", res.StatusCode)
+	}
+
+	body := make(map[string]interface{})
+
+	if res.StatusCode != http.StatusNoContent && res.StatusCode != http.StatusAccepted {
+		defer res.Body.Close()
+
+		err := json.NewDecoder(res.Body).Decode(&body)
+
+		if err != nil {
+			return nil, fmt.Errorf("decoding response payload failed: %w", err)
+		}
+
+		if len(body) == 0 || body["summary"] == nil {
+			return nil, errors.New("response body doesn't contain summary")
+		}
+
+		stats, ok := body["summary"].(map[string]interface{})
+		if ok {
+			return stats, nil
+		}
+	}
+
+	return body, nil
+}
+
+func appendStats(plStats *plugin.Stats, auth0Stats map[string]interface{}) *plugin.Stats {
+	if len(auth0Stats) == 0 {
+		return plStats
+	}
+	total, _ := auth0Stats["total"].(float64)
+	failed, _ := auth0Stats["failed"].(float64)
+	updated, _ := auth0Stats["updated"].(float64)
+	inserted, _ := auth0Stats["inserted"].(float64)
+
+	return &plugin.Stats{
+		Received: plStats.Received + int32(total),
+		Created:  plStats.Created + int32(inserted),
+		Updated:  plStats.Updated + int32(updated),
+		Errors:   plStats.Errors + int32(failed),
+	}
 }

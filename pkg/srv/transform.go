@@ -24,6 +24,13 @@ func TransformToAuth0(in *api.User) *management.User {
 		Picture:      auth0.String(in.Picture),
 		UserMetadata: make(map[string]interface{}),
 	}
+
+	for key, value := range in.Identities {
+		if value.Kind == api.IdentityKind_IDENTITY_KIND_USERNAME {
+			user.Username = auth0.String(key)
+		}
+	}
+
 	return &user
 }
 
