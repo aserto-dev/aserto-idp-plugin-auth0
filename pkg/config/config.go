@@ -42,7 +42,7 @@ func (c *Auth0Config) Validate() error {
 		c.ConnectionName = "Username-Password-Authentication"
 	}
 
-	mgnt, err := management.New(
+	_, err := management.New(
 		c.Domain,
 		management.WithClientCredentials(
 			c.ClientID,
@@ -52,10 +52,11 @@ func (c *Auth0Config) Validate() error {
 		return status.Errorf(codes.Internal, "failed to connect to Auth0, %s", err.Error())
 	}
 
-	_, err = mgnt.Connection.ReadByName(c.ConnectionName)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to get Auth0 connection, %s", err.Error())
-	}
+	// TODO: only check for writes
+	// _, err = mgnt.Connection.ReadByName(c.ConnectionName)
+	// if err != nil {
+	// 	return status.Errorf(codes.Internal, "failed to get Auth0 connection, %s", err.Error())
+	// }
 
 	return nil
 }

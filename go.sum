@@ -51,8 +51,8 @@ github.com/aserto-dev/go-grpc v0.0.26 h1:Ci2NS7ZJ0Y+PYRNgo2N5vbd+XtCNr4P/0Pany5X
 github.com/aserto-dev/go-grpc v0.0.26/go.mod h1:IsSHZa3W3MtVabgk58egJEiDTFg6fiPEHxMHQP5XE40=
 github.com/aserto-dev/go-utils v0.0.11 h1:HhlQKNBmum24HH35uBvLR5QXUrLZBXYgoJh2+Q18ONU=
 github.com/aserto-dev/go-utils v0.0.11/go.mod h1:ml6PIxJldvwpkFfXFbqzDUpEuNbH9zaKYmQ0EB1tTOQ=
-github.com/aserto-dev/idp-plugin-sdk v0.0.3 h1:Qkr5i9XrCGBteu0zsXO4z9VPShJy4Vq/iRTACNkwBEY=
-github.com/aserto-dev/idp-plugin-sdk v0.0.3/go.mod h1:g86h6Xvk9i1kTsAqAWOmzsu5qM/yrRLgOWw1AL9iCCQ=
+github.com/aserto-dev/idp-plugin-sdk v0.0.4 h1:YdWBisgHw93c3odz0slJ0tz2r4Yus2LfEbgrgV+9v90=
+github.com/aserto-dev/idp-plugin-sdk v0.0.4/go.mod h1:8OyIKFEjN3nIHhX3n716SQH/WPpgb+ImU+r4j9xXvVk=
 github.com/aserto-dev/mage-loot v0.4.6/go.mod h1:7ZBHBeo88BCQlhVCDZXL2b9x1h9nRJBqkiMxhsPBunw=
 github.com/aserto-dev/mage-loot v0.4.16 h1:F8x5D6lHdID1b0Kqm30HEIwehXfD/M94KKAHLENJZx8=
 github.com/aserto-dev/mage-loot v0.4.16/go.mod h1:P5PcTAfIKXRMHLrodrNep6Hf6ulnvodw+BpkT07AfPE=

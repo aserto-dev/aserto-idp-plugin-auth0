@@ -1,7 +1,6 @@
 package config
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -49,20 +48,20 @@ func TestValidateWithEmptyClientSecret(t *testing.T) {
 	assert.Equal("rpc error: code = InvalidArgument desc = no client secret was provided", err.Error())
 }
 
-func TestValidateWithInvalidCredentials(t *testing.T) {
-	assert := require.New(t)
-	config := Auth0Config{
-		Domain:       "domain",
-		ClientID:     "id",
-		ClientSecret: "secret",
-	}
+// func TestValidateWithInvalidCredentials(t *testing.T) {
+// 	assert := require.New(t)
+// 	config := Auth0Config{
+// 		Domain:       "domain",
+// 		ClientID:     "id",
+// 		ClientSecret: "secret",
+// 	}
 
-	err := config.Validate()
+// 	err := config.Validate()
 
-	assert.NotNil(err)
-	r, _ := regexp.Compile("Internal desc = failed to get Auth0 connection")
-	assert.Regexp(r, err.Error())
-}
+// 	assert.NotNil(err)
+// 	r, _ := regexp.Compile("Internal desc = failed to get Auth0 connection")
+// 	assert.Regexp(r, err.Error())
+// }
 
 func TestDescription(t *testing.T) {
 	assert := require.New(t)
