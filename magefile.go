@@ -3,12 +3,16 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 
 	"github.com/aserto-dev/mage-loot/buf"
 	"github.com/aserto-dev/mage-loot/common"
 	"github.com/aserto-dev/mage-loot/deps"
+	"github.com/aserto-dev/sver/pkg/sver"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
 )
@@ -19,6 +23,24 @@ func init() {
 	// Set private repositories
 	os.Setenv("GOPRIVATE", "github.com/aserto-dev")
 }
+
+var (
+	oras       = deps.BinDep("oras")
+	mediaType  = "application/vnd.unknown.layer.v1+txt"
+	pluginName = "aserto-idp-plugin-auth0"
+	ghName     = "ghcr.io/aserto-dev/aserto-idp-plugins_"
+	osMap      = map[string][]string{
+		"linux":   {"arm64", "amd64"},
+		"darwin":  {"arm64", "amd64"},
+		"windows": {"amd64"},
+	}
+
+	extensions = map[string]string{
+		"linux":   "",
+		"darwin":  "",
+		"windows": ".exe",
+	}
+)
 
 // Generate generates all code.
 func Generate() error {
@@ -78,4 +100,40 @@ func All() error {
 
 func Run() error {
 	return sh.RunV("./bin/" + runtime.GOOS + "-" + runtime.GOARCH + "/aserto-idp")
+}
+
+func Publish() error {
+
+	username := os.Getenv("DOCKER_USERNAME")
+	if username == "" {
+		return errors.New("env var DOCKER_USERNAME is not set")
+	}
+	password := os.Getenv("DOCKER_PASSWORD")
+	if password == "" {
+		return errors.New("env var DOCKER_PASSWORD is not set")
+	}
+
+	version, err := sver.CurrentVersion(true, true)
+	if err != nil {
+		return fmt.Errorf("couldn't calculate current version: %w", err)
+	}
+
+	pwd := os.Getenv("PWD")
+	defer os.Chdir(pwd)
+
+	for operatingSystem, archs := range osMap {
+		for _, arch := range archs {
+			buildPath := filepath.Join(pwd, "dist", pluginName+"_"+operatingSystem+"_"+arch)
+			os.Chdir(buildPath)
+			grName := fmt.Sprintf("%s%s_%s:%s-%s", ghName, operatingSystem, arch, "auth0", version)
+			location := fmt.Sprintf("%s%s:%s", pluginName, extensions[operatingSystem], mediaType)
+
+			err = oras("push", "-u", username, "-p", password, grName, location)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

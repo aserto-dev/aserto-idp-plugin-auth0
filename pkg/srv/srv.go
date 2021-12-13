@@ -46,6 +46,10 @@ func (s *Auth0Plugin) GetConfig() plugin.PluginConfig {
 	return &config.Auth0Config{}
 }
 
+func (s *Auth0Plugin) GetVersion() (string, string, string) {
+	return config.GetVersion()
+}
+
 func (s *Auth0Plugin) Open(cfg plugin.PluginConfig, operation plugin.OperationType) error {
 	config, ok := cfg.(*config.Auth0Config)
 	if !ok {
