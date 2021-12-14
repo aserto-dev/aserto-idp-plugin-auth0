@@ -1,16 +1,17 @@
-package srv
+package transform
 
 import (
 	"reflect"
 	"testing"
 
+	auth0TestUtils "github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/testutils"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/auth0.v5/management"
 )
 
 func TestTransformToAuth0(t *testing.T) {
 	assert := require.New(t)
-	apiUser := CreateTestApiUser("1", "Name", "email", "pic")
+	apiUser := auth0TestUtils.CreateTestApiUser("1", "Name", "email", "pic")
 
 	auth0User := TransformToAuth0(apiUser)
 
@@ -22,7 +23,7 @@ func TestTransformToAuth0(t *testing.T) {
 
 func TestTransform(t *testing.T) {
 	assert := require.New(t)
-	auth0User := CreateTestAuth0User("1", "Name", "email", "pic", "+40722332233", "userName")
+	auth0User := auth0TestUtils.CreateTestAuth0User("1", "Name", "email", "pic", "+40722332233", "userName")
 
 	apiUser := Transform(auth0User)
 
