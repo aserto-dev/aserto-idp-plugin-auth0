@@ -1,4 +1,4 @@
-package srv
+package transform
 
 import (
 	"strings"
@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	provider = "auth0"
+	Provider = "auth0"
 )
 
 func TransformToAuth0(in *api.User) *management.User {
@@ -59,13 +59,13 @@ func Transform(in *management.User) *api.User {
 
 	user.Identities[in.GetID()] = &api.IdentitySource{
 		Kind:     api.IdentityKind_IDENTITY_KIND_PID,
-		Provider: provider,
+		Provider: Provider,
 		Verified: true,
 	}
 
 	user.Identities[in.GetEmail()] = &api.IdentitySource{
 		Kind:     api.IdentityKind_IDENTITY_KIND_EMAIL,
-		Provider: provider,
+		Provider: Provider,
 		Verified: in.GetEmailVerified(),
 	}
 
@@ -74,7 +74,7 @@ func Transform(in *management.User) *api.User {
 		phone := in.UserMetadata[phoneProp].(string)
 		user.Identities[phone] = &api.IdentitySource{
 			Kind:     api.IdentityKind_IDENTITY_KIND_PHONE,
-			Provider: provider,
+			Provider: Provider,
 			Verified: false,
 		}
 	}
@@ -84,7 +84,7 @@ func Transform(in *management.User) *api.User {
 		username := in.UserMetadata[usernameProp].(string)
 		user.Identities[username] = &api.IdentitySource{
 			Kind:     api.IdentityKind_IDENTITY_KIND_USERNAME,
-			Provider: provider,
+			Provider: Provider,
 			Verified: false,
 		}
 	}

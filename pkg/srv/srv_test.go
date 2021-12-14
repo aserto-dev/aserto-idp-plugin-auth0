@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/config"
+	auth0TestUtils "github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/testutils"
 	"github.com/aserto-dev/go-grpc/aserto/api/v1"
 	"github.com/aserto-dev/go-utils/testutil"
 	"github.com/aserto-dev/idp-plugin-sdk/plugin"
@@ -38,7 +39,7 @@ func TestOpen(t *testing.T) {
 func TestWrite(t *testing.T) {
 	assert := require.New(t)
 
-	apiUser := CreateTestApiUser("2ff319e101e1", "Test User", "user@test.com", "https://github.com/aserto-demo/contoso-ad-sample/raw/main/UserImages/Euan%20Garden.jpg")
+	apiUser := auth0TestUtils.CreateTestApiUser("2ff319e101e1", "Test User", "user@test.com", "https://github.com/aserto-demo/contoso-ad-sample/raw/main/UserImages/Euan%20Garden.jpg")
 	config := CreateConfig()
 	err := config.Validate()
 	assert.Nil(err)

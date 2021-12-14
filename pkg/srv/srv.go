@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/config"
+	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/transform"
 	api "github.com/aserto-dev/go-grpc/aserto/api/v1"
 	"github.com/aserto-dev/idp-plugin-sdk/plugin"
 	multierror "github.com/hashicorp/go-multierror"
@@ -60,7 +61,7 @@ func (s *Auth0Plugin) Open(cfg plugin.PluginConfig, operation plugin.OperationTy
 	s.finishedRead = false
 	s.op = operation
 
-	mgnt, err := management.New(
+	mgmt, err := management.New(
 		config.Domain,
 		management.WithClientCredentials(
 			config.ClientID,
@@ -71,14 +72,14 @@ func (s *Auth0Plugin) Open(cfg plugin.PluginConfig, operation plugin.OperationTy
 		return nil
 	}
 
-	s.mgmt = mgnt
+	s.mgmt = mgmt
 
 	if operation == plugin.OperationTypeWrite {
 		if config.ConnectionName == "" {
 			config.ConnectionName = "Username-Password-Authentication"
 		}
 
-		c, err := mgnt.Connection.ReadByName(config.ConnectionName)
+		c, err := mgmt.Connection.ReadByName(config.ConnectionName)
 		if err != nil {
 			return err
 		}
@@ -102,7 +103,7 @@ func (s *Auth0Plugin) Read() ([]*api.User, error) {
 	var errs error
 	var users []*api.User
 	for _, u := range ul.Users {
-		user := Transform(u)
+		user := transform.Transform(u)
 
 		users = append(users, user)
 	}
@@ -115,7 +116,7 @@ func (s *Auth0Plugin) Read() ([]*api.User, error) {
 }
 
 func (s *Auth0Plugin) Write(user *api.User) error {
-	u := TransformToAuth0(user)
+	u := transform.TransformToAuth0(user)
 
 	userMap, size, err := structToMap(u)
 	if err != nil {
