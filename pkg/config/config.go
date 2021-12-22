@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/aserto-dev/idp-plugin-sdk/plugin"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gopkg.in/auth0.v5/management"
@@ -24,7 +25,7 @@ type Auth0Config struct {
 	ConnectionName string `description:"Auth0 database connection name" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_connection_name"`
 }
 
-func (c *Auth0Config) Validate() error {
+func (c *Auth0Config) Validate(operation plugin.OperationType) error {
 
 	if c.Domain == "" {
 		return status.Error(codes.InvalidArgument, "no domain was provided")
@@ -42,21 +43,23 @@ func (c *Auth0Config) Validate() error {
 		c.ConnectionName = "Username-Password-Authentication"
 	}
 
-	_, err := management.New(
+	mgnt, err := management.New(
 		c.Domain,
 		management.WithClientCredentials(
 			c.ClientID,
 			c.ClientSecret,
 		))
+
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to connect to Auth0, %s", err.Error())
 	}
 
-	// TODO: only check for writes
-	// _, err = mgnt.Connection.ReadByName(c.ConnectionName)
-	// if err != nil {
-	// 	return status.Errorf(codes.Internal, "failed to get Auth0 connection, %s", err.Error())
-	// }
+	if operation == plugin.OperationTypeWrite {
+		_, err = mgnt.Connection.ReadByName(c.ConnectionName)
+		if err != nil {
+			return status.Errorf(codes.Internal, "failed to get Auth0 connection, %s", err.Error())
+		}
+	}
 
 	return nil
 }
