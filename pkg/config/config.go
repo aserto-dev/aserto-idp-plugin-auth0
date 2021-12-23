@@ -19,10 +19,10 @@ func GetVersion() (string, string, string) {
 }
 
 type Auth0Config struct {
-	Domain         string `description:"Auth0 domain" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_domain"`
-	ClientID       string `description:"Auth0 Client ID" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_client_id"`
-	ClientSecret   string `description:"Auth0 Client Secret" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_client_secret"`
-	ConnectionName string `description:"Auth0 database connection name" kind:"attribute" mode:"normal" readonly:"false" name:"auth0_connection_name"`
+	Domain         string `description:"Auth0 domain" kind:"attribute" mode:"normal" readonly:"false" name:"domain"`
+	ClientID       string `description:"Auth0 Client ID" kind:"attribute" mode:"normal" readonly:"false" name:"client_id"`
+	ClientSecret   string `description:"Auth0 Client Secret" kind:"attribute" mode:"normal" readonly:"false" name:"client_secret"`
+	ConnectionName string `description:"Auth0 database connection name" kind:"attribute" mode:"normal" readonly:"false" name:"connection_name"`
 }
 
 func (c *Auth0Config) Validate(operation plugin.OperationType) error {
