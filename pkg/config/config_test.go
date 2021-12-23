@@ -1,8 +1,10 @@
 package config
 
 import (
+	"regexp"
 	"testing"
 
+	"github.com/aserto-dev/idp-plugin-sdk/plugin"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,7 +16,7 @@ func TestValidateWithEmptyDomain(t *testing.T) {
 		ClientSecret: "secret",
 	}
 
-	err := config.Validate()
+	err := config.Validate(plugin.OperationTypeRead)
 
 	assert.NotNil(err)
 	assert.Equal("rpc error: code = InvalidArgument desc = no domain was provided", err.Error())
@@ -28,7 +30,7 @@ func TestValidateWithEmptyClientID(t *testing.T) {
 		ClientSecret: "secret",
 	}
 
-	err := config.Validate()
+	err := config.Validate(plugin.OperationTypeRead)
 
 	assert.NotNil(err)
 	assert.Equal("rpc error: code = InvalidArgument desc = no client id was provided", err.Error())
@@ -42,26 +44,26 @@ func TestValidateWithEmptyClientSecret(t *testing.T) {
 		ClientSecret: "",
 	}
 
-	err := config.Validate()
+	err := config.Validate(plugin.OperationTypeRead)
 
 	assert.NotNil(err)
 	assert.Equal("rpc error: code = InvalidArgument desc = no client secret was provided", err.Error())
 }
 
-// func TestValidateWithInvalidCredentials(t *testing.T) {
-// 	assert := require.New(t)
-// 	config := Auth0Config{
-// 		Domain:       "domain",
-// 		ClientID:     "id",
-// 		ClientSecret: "secret",
-// 	}
+func TestValidateWithInvalidCredentials(t *testing.T) {
+	assert := require.New(t)
+	config := Auth0Config{
+		Domain:       "domain",
+		ClientID:     "id",
+		ClientSecret: "secret",
+	}
 
-// 	err := config.Validate()
+	err := config.Validate(plugin.OperationTypeWrite)
 
-// 	assert.NotNil(err)
-// 	r, _ := regexp.Compile("Internal desc = failed to get Auth0 connection")
-// 	assert.Regexp(r, err.Error())
-// }
+	assert.NotNil(err)
+	r, _ := regexp.Compile("Internal desc = failed to get Auth0 connection")
+	assert.Regexp(r, err.Error())
+}
 
 func TestDescription(t *testing.T) {
 	assert := require.New(t)

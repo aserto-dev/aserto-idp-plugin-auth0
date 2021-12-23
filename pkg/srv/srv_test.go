@@ -24,7 +24,7 @@ func TestOpen(t *testing.T) {
 	assert := require.New(t)
 
 	config := CreateConfig()
-	err := config.Validate()
+	err := config.Validate(plugin.OperationTypeRead)
 	assert.Nil(err)
 
 	auth0Plugin := NewAuth0Plugin()
@@ -41,7 +41,7 @@ func TestWrite(t *testing.T) {
 
 	apiUser := auth0TestUtils.CreateTestApiUser("2ff319e101e1", "Test User", "user@test.com", "https://github.com/aserto-demo/contoso-ad-sample/raw/main/UserImages/Euan%20Garden.jpg")
 	config := CreateConfig()
-	err := config.Validate()
+	err := config.Validate(plugin.OperationTypeWrite)
 	assert.Nil(err)
 
 	auth0Plugin := NewAuth0Plugin()
@@ -63,7 +63,7 @@ func TestRead(t *testing.T) {
 	assert := require.New(t)
 
 	config := CreateConfig()
-	err := config.Validate()
+	err := config.Validate(plugin.OperationTypeRead)
 	assert.Nil(err)
 
 	auth0Plugin := NewAuth0Plugin()
@@ -87,7 +87,7 @@ func TestDelete(t *testing.T) {
 	assert := require.New(t)
 
 	config := CreateConfig()
-	err := config.Validate()
+	err := config.Validate(plugin.OperationTypeRead)
 	assert.Nil(err)
 
 	auth0Plugin := NewAuth0Plugin()

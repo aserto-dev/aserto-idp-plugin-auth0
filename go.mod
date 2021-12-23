@@ -3,15 +3,15 @@ module github.com/aserto-dev/aserto-idp-plugin-auth0
 go 1.17
 
 require (
-	github.com/aserto-dev/go-grpc v0.0.26
+	github.com/aserto-dev/go-grpc v0.0.33
 	github.com/aserto-dev/go-utils v0.0.11
-	github.com/aserto-dev/idp-plugin-sdk v0.0.5
+	github.com/aserto-dev/idp-plugin-sdk v0.0.6
 	github.com/aserto-dev/mage-loot v0.4.16
 	github.com/aserto-dev/sver v1.3.9
 	github.com/hashicorp/go-multierror v1.0.0
-	github.com/magefile/mage v1.11.0
+	github.com/magefile/mage v1.12.0
 	github.com/stretchr/testify v1.7.0
-	google.golang.org/grpc v1.42.0
+	google.golang.org/grpc v1.43.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/auth0.v5 v5.19.2
 )
@@ -30,7 +30,7 @@ require (
 	github.com/go-test/deep v1.0.8 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-containerregistry v0.7.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.6.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.1 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-hclog v0.16.2 // indirect
 	github.com/hashicorp/go-plugin v1.4.3 // indirect
@@ -63,7 +63,7 @@ require (
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20211111162719-482062a4217b // indirect
+	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
