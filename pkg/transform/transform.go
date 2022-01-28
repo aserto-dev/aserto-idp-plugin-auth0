@@ -18,16 +18,20 @@ const (
 func TransformToAuth0(in *api.User) *management.User {
 	// TODO: add more data here
 	user := management.User{
-		ID:           auth0.String(in.Id),
-		Nickname:     auth0.String(in.DisplayName),
-		Email:        auth0.String(in.Email),
-		Picture:      auth0.String(in.Picture),
-		UserMetadata: make(map[string]interface{}),
+		ID:       auth0.String(in.Id),
+		Nickname: auth0.String(in.DisplayName),
+		Email:    auth0.String(in.Email),
+		Picture:  auth0.String(in.Picture),
+	}
+
+	if in.Attributes != nil && in.Attributes.Properties != nil {
+		user.UserMetadata = in.Attributes.Properties.AsMap()
 	}
 
 	for key, value := range in.Identities {
 		if value.Kind == api.IdentityKind_IDENTITY_KIND_USERNAME {
 			user.Username = auth0.String(key)
+			break
 		}
 	}
 
