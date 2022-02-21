@@ -1,7 +1,6 @@
 package config
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/aserto-dev/idp-plugin-sdk/plugin"
@@ -61,8 +60,23 @@ func TestValidateWithInvalidCredentials(t *testing.T) {
 	err := config.Validate(plugin.OperationTypeWrite)
 
 	assert.NotNil(err)
-	r := regexp.MustCompile("Internal desc = failed to get Auth0 connection")
-	assert.Regexp(r, err.Error())
+	assert.Contains(err.Error(), "Internal desc = failed to get Auth0 connection")
+}
+
+func TestValidateWithUserIDAndEmail(t *testing.T) {
+	assert := require.New(t)
+	config := Auth0Config{
+		Domain:       "domain",
+		ClientID:     "id",
+		ClientSecret: "secret",
+		UserPID:      "someID",
+		UserEmail:    "test@email.com",
+	}
+
+	err := config.Validate(plugin.OperationTypeWrite)
+
+	assert.NotNil(err)
+	assert.Contains(err.Error(), "rpc error: code = InvalidArgument desc = an user PID and an user email were provided; please specify only one")
 }
 
 func TestDescription(t *testing.T) {
