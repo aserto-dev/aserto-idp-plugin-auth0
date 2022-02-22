@@ -11,9 +11,9 @@ import (
 
 func TestTransformToAuth0(t *testing.T) {
 	assert := require.New(t)
-	apiUser := auth0TestUtils.CreateTestApiUser("1", "Name", "email", "pic")
+	apiUser := auth0TestUtils.CreateTestAPIUser("1", "Name", "email", "pic")
 
-	auth0User := TransformToAuth0(apiUser)
+	auth0User := ToAuth0(apiUser)
 
 	assert.True(reflect.TypeOf(*auth0User) == reflect.TypeOf(management.User{}), "the returned object should be *management.User")
 	assert.Equal("Name", (*auth0User).GetNickname(), "should correctly detect the nickname")

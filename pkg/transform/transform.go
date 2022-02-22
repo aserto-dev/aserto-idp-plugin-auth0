@@ -15,8 +15,7 @@ const (
 	Provider = "auth0"
 )
 
-func TransformToAuth0(in *api.User) *management.User {
-	// TODO: add more data here
+func ToAuth0(in *api.User) *management.User {
 	user := management.User{
 		ID:       auth0.String(in.Id),
 		Nickname: auth0.String(in.DisplayName),

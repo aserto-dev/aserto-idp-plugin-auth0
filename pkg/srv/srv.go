@@ -52,20 +52,20 @@ func (s *Auth0Plugin) GetVersion() (string, string, string) {
 }
 
 func (s *Auth0Plugin) Open(cfg plugin.PluginConfig, operation plugin.OperationType) error {
-	config, ok := cfg.(*config.Auth0Config)
+	auth0Config, ok := cfg.(*config.Auth0Config)
 	if !ok {
 		return errors.New("invalid config")
 	}
-	s.Config = config
+	s.Config = auth0Config
 	s.page = 0
 	s.finishedRead = false
 	s.op = operation
 
 	mgmt, err := management.New(
-		config.Domain,
+		auth0Config.Domain,
 		management.WithClientCredentials(
-			config.ClientID,
-			config.ClientSecret,
+			auth0Config.ClientID,
+			auth0Config.ClientSecret,
 		))
 
 	if err != nil {
@@ -75,11 +75,11 @@ func (s *Auth0Plugin) Open(cfg plugin.PluginConfig, operation plugin.OperationTy
 	s.mgmt = mgmt
 
 	if operation == plugin.OperationTypeWrite {
-		if config.ConnectionName == "" {
-			config.ConnectionName = "Username-Password-Authentication"
+		if auth0Config.ConnectionName == "" {
+			auth0Config.ConnectionName = "Username-Password-Authentication"
 		}
 
-		c, err := mgmt.Connection.ReadByName(config.ConnectionName)
+		c, err := mgmt.Connection.ReadByName(auth0Config.ConnectionName)
 		if err != nil {
 			return err
 		}
@@ -116,7 +116,7 @@ func (s *Auth0Plugin) Read() ([]*api.User, error) {
 }
 
 func (s *Auth0Plugin) Write(user *api.User) error {
-	u := transform.TransformToAuth0(user)
+	u := transform.ToAuth0(user)
 
 	userMap, size, err := structToMap(u)
 	if err != nil {
@@ -137,42 +137,40 @@ func (s *Auth0Plugin) Write(user *api.User) error {
 	return nil
 }
 
-func (s *Auth0Plugin) Delete(userId string) error {
+func (s *Auth0Plugin) Delete(userID string) error {
 	if s.mgmt == nil {
 		return status.Error(codes.Internal, "auth0 management client not initialized")
 	}
 
-	return s.mgmt.User.Delete(userId)
+	return s.mgmt.User.Delete(userID)
 }
 
 func (s *Auth0Plugin) Close() (*plugin.Stats, error) {
-	switch s.op {
+	switch s.op { //nolint : gocritic // tbd
 	case plugin.OperationTypeWrite:
-		{
-			if len(s.users) > 0 {
-				err := s.startJob()
+		if len(s.users) > 0 {
+			err := s.startJob()
 
-				if err != nil {
-					return nil, err
-				}
+			if err != nil {
+				return nil, err
 			}
-
-			var errs error
-			stats := &plugin.Stats{}
-			for _, j := range s.jobs {
-				jobID := auth0.StringValue(j.ID)
-				err := s.waitJob(jobID)
-				if err != nil {
-					errs = multierror.Append(errs, err)
-				} else {
-					auth0Stats, err := retrieveJobSummary(s.mgmt, jobID)
-					if err == nil {
-						stats = appendStats(stats, auth0Stats)
-					}
-				}
-			}
-			return stats, errs
 		}
+
+		var errs error
+		stats := &plugin.Stats{}
+		for i := 0; i < len(s.jobs); i++ {
+			jobID := auth0.StringValue(s.jobs[i].ID)
+			err := s.waitJob(jobID)
+			if err != nil {
+				errs = multierror.Append(errs, err)
+			} else {
+				auth0Stats, err := retrieveJobSummary(s.mgmt, jobID)
+				if err == nil {
+					stats = appendStats(stats, auth0Stats)
+				}
+			}
+		}
+		return stats, errs
 	}
 
 	return nil, nil
@@ -187,10 +185,8 @@ func (s *Auth0Plugin) waitJob(jobID string) error {
 
 		switch *j.Status {
 		case "pending":
-			{
-				time.Sleep(1 * time.Second)
-				continue
-			}
+			time.Sleep(1 * time.Second)
+			continue
 		case "failed":
 			return fmt.Errorf("job %s failed", jobID)
 		case "completed":

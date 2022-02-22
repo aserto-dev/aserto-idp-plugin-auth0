@@ -22,6 +22,7 @@ func init() {
 	os.Setenv("GO_VERSION", "1.17")
 	// Set private repositories
 	os.Setenv("GOPRIVATE", "github.com/aserto-dev")
+	os.Setenv("VAULT_ADDR", "https://vault.eng.aserto.com")
 }
 
 var (

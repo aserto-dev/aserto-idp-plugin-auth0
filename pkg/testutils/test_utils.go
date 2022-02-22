@@ -11,7 +11,7 @@ import (
 	"gopkg.in/auth0.v5/management"
 )
 
-func CreateTestApiUser(id, displayName, email, picture string) *api.User {
+func CreateTestAPIUser(id, displayName, email, picture string) *api.User {
 	user := api.User{
 		Id:          id,
 		DisplayName: displayName,
