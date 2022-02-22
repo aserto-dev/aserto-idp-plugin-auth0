@@ -23,12 +23,12 @@ func CreateConfig() config.Auth0Config {
 func TestOpen(t *testing.T) {
 	assert := require.New(t)
 
-	config := CreateConfig()
-	err := config.Validate(plugin.OperationTypeRead)
+	cfg := CreateConfig()
+	err := cfg.Validate(plugin.OperationTypeRead)
 	assert.Nil(err)
 
 	auth0Plugin := NewAuth0Plugin()
-	err = auth0Plugin.Open(&config, plugin.OperationTypeRead)
+	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
 	assert.Nil(err)
 
 	stats, err := auth0Plugin.Close()
@@ -39,13 +39,13 @@ func TestOpen(t *testing.T) {
 func TestWrite(t *testing.T) {
 	assert := require.New(t)
 
-	apiUser := auth0TestUtils.CreateTestApiUser("2ff319e101e1", "Test User", "user@test.com", "https://github.com/aserto-demo/contoso-ad-sample/raw/main/UserImages/Euan%20Garden.jpg")
-	config := CreateConfig()
-	err := config.Validate(plugin.OperationTypeWrite)
+	apiUser := auth0TestUtils.CreateTestAPIUser("2ff319e101e1", "Test User", "user@test.com", "https://github.com/aserto-demo/contoso-ad-sample/raw/main/UserImages/Euan%20Garden.jpg")
+	cfg := CreateConfig()
+	err := cfg.Validate(plugin.OperationTypeWrite)
 	assert.Nil(err)
 
 	auth0Plugin := NewAuth0Plugin()
-	err = auth0Plugin.Open(&config, plugin.OperationTypeWrite)
+	err = auth0Plugin.Open(&cfg, plugin.OperationTypeWrite)
 	assert.Nil(err)
 
 	err = auth0Plugin.Write(apiUser)
@@ -62,12 +62,12 @@ func TestWrite(t *testing.T) {
 func TestRead(t *testing.T) {
 	assert := require.New(t)
 
-	config := CreateConfig()
-	err := config.Validate(plugin.OperationTypeRead)
+	cfg := CreateConfig()
+	err := cfg.Validate(plugin.OperationTypeRead)
 	assert.Nil(err)
 
 	auth0Plugin := NewAuth0Plugin()
-	err = auth0Plugin.Open(&config, plugin.OperationTypeRead)
+	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
 	assert.Nil(err)
 
 	users, err := auth0Plugin.Read()
@@ -86,12 +86,12 @@ func TestRead(t *testing.T) {
 func TestDelete(t *testing.T) {
 	assert := require.New(t)
 
-	config := CreateConfig()
-	err := config.Validate(plugin.OperationTypeRead)
+	cfg := CreateConfig()
+	err := cfg.Validate(plugin.OperationTypeRead)
 	assert.Nil(err)
 
 	auth0Plugin := NewAuth0Plugin()
-	err = auth0Plugin.Open(&config, plugin.OperationTypeRead)
+	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
 	assert.Nil(err)
 
 	users, err := auth0Plugin.Read()
@@ -111,7 +111,7 @@ func TestDelete(t *testing.T) {
 	assert.Nil(err)
 	assert.Nil(stats)
 
-	err = auth0Plugin.Open(&config, plugin.OperationTypeDelete)
+	err = auth0Plugin.Open(&cfg, plugin.OperationTypeDelete)
 	assert.Nil(err)
 
 	err = auth0Plugin.Delete("auth0|" + testUser.Id)

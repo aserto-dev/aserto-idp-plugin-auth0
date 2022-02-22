@@ -61,7 +61,7 @@ func TestValidateWithInvalidCredentials(t *testing.T) {
 	err := config.Validate(plugin.OperationTypeWrite)
 
 	assert.NotNil(err)
-	r, _ := regexp.Compile("Internal desc = failed to get Auth0 connection")
+	r := regexp.MustCompile("Internal desc = failed to get Auth0 connection")
 	assert.Regexp(r, err.Error())
 }
 
