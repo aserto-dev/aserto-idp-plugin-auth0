@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -43,7 +44,7 @@ func NewAuth0Plugin() *Auth0Plugin {
 	}
 }
 
-func (s *Auth0Plugin) GetConfig() plugin.PluginConfig {
+func (s *Auth0Plugin) GetConfig() plugin.Config {
 	return &config.Auth0Config{}
 }
 
@@ -51,11 +52,16 @@ func (s *Auth0Plugin) GetVersion() (string, string, string) {
 	return config.GetVersion()
 }
 
-func (s *Auth0Plugin) Open(cfg plugin.PluginConfig, operation plugin.OperationType) error {
+func (s *Auth0Plugin) Open(cfg plugin.Config, operation plugin.OperationType) error {
 	auth0Config, ok := cfg.(*config.Auth0Config)
 	if !ok {
 		return errors.New("invalid config")
 	}
+
+	if auth0Config.UserPID != "" && !strings.HasPrefix(auth0Config.UserPID, "auth0|") {
+		auth0Config.UserPID = "auth0|" + auth0Config.UserPID
+	}
+
 	s.Config = auth0Config
 	s.page = 0
 	s.finishedRead = false
@@ -94,14 +100,28 @@ func (s *Auth0Plugin) Read() ([]*api.User, error) {
 		return nil, io.EOF
 	}
 
+	var errs error
+	var users []*api.User
+
+	if s.Config.UserPID != "" {
+		user, err := s.readByPID(s.Config.UserPID)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+		return users, nil
+	}
+
+	if s.Config.UserEmail != "" {
+		return s.readByEmail(s.Config.UserEmail)
+	}
+
 	opts := management.Page(s.page)
 	ul, err := s.mgmt.User.List(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	var errs error
-	var users []*api.User
 	for _, u := range ul.Users {
 		user := transform.Transform(u)
 
@@ -113,6 +133,40 @@ func (s *Auth0Plugin) Read() ([]*api.User, error) {
 	s.page++
 
 	return users, errs
+}
+
+func (s *Auth0Plugin) readByPID(id string) (*api.User, error) {
+
+	user, err := s.mgmt.User.Read(id)
+	s.finishedRead = true
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, fmt.Errorf("failed to get user by pid %s", id)
+	}
+
+	return transform.Transform(user), nil
+}
+
+func (s *Auth0Plugin) readByEmail(email string) ([]*api.User, error) {
+	var users []*api.User
+
+	auth0Users, err := s.mgmt.User.ListByEmail(email)
+	s.finishedRead = true
+	if err != nil {
+		return nil, err
+	}
+	if len(auth0Users) < 1 {
+		return nil, fmt.Errorf("failed to get user by email %s", email)
+	}
+
+	for _, user := range auth0Users {
+		apiUser := transform.Transform(user)
+		users = append(users, apiUser)
+	}
+
+	return users, nil
 }
 
 func (s *Auth0Plugin) Write(user *api.User) error {

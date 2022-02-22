@@ -59,6 +59,110 @@ func TestWrite(t *testing.T) {
 	assert.Equal(int32(0), stats.Errors)
 }
 
+func TestReadInvalidUserID(t *testing.T) {
+	assert := require.New(t)
+
+	cfg := CreateConfig()
+	cfg.UserPID = "somerandomID"
+	err := cfg.Validate(plugin.OperationTypeRead)
+	assert.Nil(err)
+
+	auth0Plugin := NewAuth0Plugin()
+	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
+	assert.Nil(err)
+
+	users, err := auth0Plugin.Read()
+	assert.NotNil(err)
+	assert.Equal(0, len(users))
+
+	_, err = auth0Plugin.Read()
+	assert.NotNil(err)
+	assert.Equal(io.EOF, err)
+
+	stats, err := auth0Plugin.Close()
+	assert.Nil(err)
+	assert.Nil(stats)
+}
+
+func TestReadUserByID(t *testing.T) {
+	assert := require.New(t)
+
+	cfg := CreateConfig()
+	cfg.UserPID = "2ff319e101e1"
+	err := cfg.Validate(plugin.OperationTypeRead)
+	assert.Nil(err)
+
+	auth0Plugin := NewAuth0Plugin()
+	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
+	assert.Nil(err)
+
+	users, err := auth0Plugin.Read()
+	assert.Nil(err)
+	assert.Equal(1, len(users))
+	assert.Equal(users[0].GetId(), "2ff319e101e1")
+	assert.Equal(users[0].GetDisplayName(), "Test User")
+
+	_, err = auth0Plugin.Read()
+	assert.NotNil(err)
+	assert.Equal(io.EOF, err)
+
+	stats, err := auth0Plugin.Close()
+	assert.Nil(err)
+	assert.Nil(stats)
+}
+
+func TestReadInvalidUserEmail(t *testing.T) {
+	assert := require.New(t)
+
+	cfg := CreateConfig()
+	cfg.UserEmail = "invalidID"
+	err := cfg.Validate(plugin.OperationTypeRead)
+	assert.Nil(err)
+
+	auth0Plugin := NewAuth0Plugin()
+	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
+	assert.Nil(err)
+
+	users, err := auth0Plugin.Read()
+	assert.NotNil(err)
+	assert.Equal(0, len(users))
+
+	_, err = auth0Plugin.Read()
+	assert.NotNil(err)
+	assert.Equal(io.EOF, err)
+
+	stats, err := auth0Plugin.Close()
+	assert.Nil(err)
+	assert.Nil(stats)
+}
+
+func TestReadUserByEmail(t *testing.T) {
+	assert := require.New(t)
+
+	cfg := CreateConfig()
+	cfg.UserEmail = "user@test.com"
+	err := cfg.Validate(plugin.OperationTypeRead)
+	assert.Nil(err)
+
+	auth0Plugin := NewAuth0Plugin()
+	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
+	assert.Nil(err)
+
+	users, err := auth0Plugin.Read()
+	assert.Nil(err)
+	assert.Equal(1, len(users))
+	assert.Equal(users[0].GetEmail(), "user@test.com")
+	assert.Equal(users[0].GetDisplayName(), "Test User")
+
+	_, err = auth0Plugin.Read()
+	assert.NotNil(err)
+	assert.Equal(io.EOF, err)
+
+	stats, err := auth0Plugin.Close()
+	assert.Nil(err)
+	assert.Nil(stats)
+}
+
 func TestRead(t *testing.T) {
 	assert := require.New(t)
 

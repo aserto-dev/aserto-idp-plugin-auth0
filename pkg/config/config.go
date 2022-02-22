@@ -23,6 +23,8 @@ type Auth0Config struct {
 	ClientID       string `description:"Auth0 Client ID" kind:"attribute" mode:"normal" readonly:"false" name:"client-id"`
 	ClientSecret   string `description:"Auth0 Client Secret" kind:"attribute" mode:"normal" readonly:"false" name:"client-secret"`
 	ConnectionName string `description:"Auth0 database connection name" kind:"attribute" mode:"normal" readonly:"false" name:"connection-name"`
+	UserPID        string `description:"Auth0 User PID of the user you want to read" kind:"attribute" mode:"normal" readonly:"false" name:"user-pid"`
+	UserEmail      string `description:"Auth0 User email of the user you want to read" kind:"attribute" mode:"normal" readonly:"false" name:"user-email"`
 }
 
 func (c *Auth0Config) Validate(operation plugin.OperationType) error {
@@ -37,6 +39,10 @@ func (c *Auth0Config) Validate(operation plugin.OperationType) error {
 
 	if c.ClientSecret == "" {
 		return status.Error(codes.InvalidArgument, "no client secret was provided")
+	}
+
+	if c.UserPID != "" && c.UserEmail != "" {
+		return status.Error(codes.InvalidArgument, "an user PID and an user email were provided; please specify only one")
 	}
 
 	if c.ConnectionName == "" {

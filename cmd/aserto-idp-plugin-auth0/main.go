@@ -9,8 +9,8 @@ import (
 
 func main() {
 
-	options := &plugin.PluginOptions{
-		PluginHandler: &srv.Auth0Plugin{},
+	options := &plugin.Options{
+		Handler: &srv.Auth0Plugin{},
 	}
 
 	err := plugin.Serve(options)
