@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/aserto-dev/go-grpc v0.8.2
-	github.com/aserto-dev/go-utils v0.8.0
+	github.com/aserto-dev/go-utils v0.8.2
 	github.com/aserto-dev/idp-plugin-sdk v0.8.1
 	github.com/aserto-dev/mage-loot v0.8.1
 	github.com/aserto-dev/sver v1.3.9
@@ -23,7 +23,7 @@ require (
 	github.com/aserto-dev/clui v0.8.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/cli v20.10.11+incompatible // indirect
-	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/distribution v2.8.0+incompatible // indirect
 	github.com/docker/docker v20.10.11+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.6.4 // indirect
 	github.com/fatih/color v1.13.0 // indirect
@@ -60,7 +60,7 @@ require (
 	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
