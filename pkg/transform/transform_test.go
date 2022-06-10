@@ -5,8 +5,9 @@ import (
 	"testing"
 
 	auth0TestUtils "github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/testutils"
+
+	"github.com/auth0/go-auth0/management"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/auth0.v5/management"
 )
 
 func TestTransformToAuth0(t *testing.T) {

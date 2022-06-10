@@ -14,11 +14,12 @@ import (
 	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/transform"
 	api "github.com/aserto-dev/go-grpc/aserto/api/v1"
 	"github.com/aserto-dev/idp-plugin-sdk/plugin"
+
+	"github.com/auth0/go-auth0"
+	"github.com/auth0/go-auth0/management"
 	multierror "github.com/hashicorp/go-multierror"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"gopkg.in/auth0.v5"
-	"gopkg.in/auth0.v5/management"
 )
 
 const (
@@ -72,7 +73,8 @@ func (s *Auth0Plugin) Open(cfg plugin.Config, operation plugin.OperationType) er
 		management.WithClientCredentials(
 			auth0Config.ClientID,
 			auth0Config.ClientSecret,
-		))
+		),
+	)
 
 	if err != nil {
 		return nil
@@ -124,6 +126,7 @@ func (s *Auth0Plugin) Read() ([]*api.User, error) {
 
 	for _, u := range ul.Users {
 		user := transform.Transform(u)
+		_ = s.getRoles(u, user)
 
 		users = append(users, user)
 	}
@@ -137,16 +140,19 @@ func (s *Auth0Plugin) Read() ([]*api.User, error) {
 
 func (s *Auth0Plugin) readByPID(id string) (*api.User, error) {
 
-	user, err := s.mgmt.User.Read(id)
+	u, err := s.mgmt.User.Read(id)
 	s.finishedRead = true
 	if err != nil {
 		return nil, err
 	}
-	if user == nil {
+	if u == nil {
 		return nil, fmt.Errorf("failed to get user by pid %s", id)
 	}
 
-	return transform.Transform(user), nil
+	user := transform.Transform(u)
+	_ = s.getRoles(u, user)
+
+	return user, nil
 }
 
 func (s *Auth0Plugin) readByEmail(email string) ([]*api.User, error) {
@@ -161,9 +167,11 @@ func (s *Auth0Plugin) readByEmail(email string) ([]*api.User, error) {
 		return nil, fmt.Errorf("failed to get user by email %s", email)
 	}
 
-	for _, user := range auth0Users {
-		apiUser := transform.Transform(user)
-		users = append(users, apiUser)
+	for _, u := range auth0Users {
+		user := transform.Transform(u)
+		_ = s.getRoles(u, user)
+
+		users = append(users, user)
 	}
 
 	return users, nil
@@ -340,4 +348,26 @@ func appendStats(plStats *plugin.Stats, auth0Stats map[string]interface{}) *plug
 		Updated:  plStats.Updated + int32(updated),
 		Errors:   plStats.Errors + int32(failed),
 	}
+}
+
+func (s *Auth0Plugin) getRoles(u *management.User, user *api.User) error {
+	for {
+		opts := management.Page(s.page)
+		rl, err := s.mgmt.User.Roles(*u.ID, opts)
+		if err != nil {
+			return err
+		}
+
+		for _, role := range rl.Roles {
+			user.Attributes.Roles = append(user.Attributes.Roles, *role.Name)
+		}
+
+		if !rl.HasNext() {
+			s.finishedRead = true
+			break
+		}
+		s.page++
+	}
+
+	return nil
 }
