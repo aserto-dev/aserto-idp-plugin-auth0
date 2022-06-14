@@ -2,10 +2,11 @@ package srv
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/auth0/go-auth0"
 	"github.com/auth0/go-auth0/management"
 	multierror "github.com/hashicorp/go-multierror"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -92,6 +94,10 @@ func (s *Auth0Plugin) Open(cfg plugin.Config, operation plugin.OperationType) er
 			return err
 		}
 		s.connectionID = auth0.StringValue(c.ID)
+	}
+
+	if err := s.checkRequiredScopes(s.Config, operation); err != nil {
+		return err
 	}
 
 	return nil
@@ -337,6 +343,7 @@ func appendStats(plStats *plugin.Stats, auth0Stats map[string]interface{}) *plug
 	if len(auth0Stats) == 0 {
 		return plStats
 	}
+
 	total, _ := auth0Stats["total"].(float64)
 	failed, _ := auth0Stats["failed"].(float64)
 	updated, _ := auth0Stats["updated"].(float64)
@@ -351,8 +358,9 @@ func appendStats(plStats *plugin.Stats, auth0Stats map[string]interface{}) *plug
 }
 
 func (s *Auth0Plugin) getRoles(u *management.User, user *api.User) error {
+	page := 0
 	for {
-		opts := management.Page(s.page)
+		opts := management.Page(page)
 		rl, err := s.mgmt.User.Roles(*u.ID, opts)
 		if err != nil {
 			return err
@@ -363,11 +371,83 @@ func (s *Auth0Plugin) getRoles(u *management.User, user *api.User) error {
 		}
 
 		if !rl.HasNext() {
-			s.finishedRead = true
 			break
 		}
-		s.page++
+		page++
 	}
 
 	return nil
+}
+
+func (s *Auth0Plugin) checkRequiredScopes(c *config.Auth0Config, operation plugin.OperationType) error {
+	client := http.DefaultClient
+
+	urlPath, err := url.Parse(fmt.Sprintf("https://%s/oauth/token/", c.Domain))
+	if err != nil {
+		return err
+	}
+
+	audience, err := url.Parse(fmt.Sprintf("https://%s/api/v2/", c.Domain))
+	if err != nil {
+		return err
+	}
+
+	data := url.Values{}
+	data.Add("grant_type", "client_credentials")
+	data.Add("client_id", c.ClientID)
+	data.Add("client_secret", c.ClientSecret)
+	data.Add("audience", audience.String())
+	encodedData := data.Encode()
+
+	req, err := http.NewRequest(http.MethodPost, urlPath.String(), strings.NewReader(encodedData))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("content-type", "application/x-www-form-urlencoded")
+	req.Header.Add("content-length", strconv.Itoa(len(encodedData)))
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	var result struct {
+		AccessToken string `json:"access_token"`
+		ExpiresIn   int    `json:"expires_in"`
+		Scope       string `json:"scope"`
+		TokenType   string `json:"token_type"`
+	}
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		return err
+	}
+
+	var reqScopes []string
+	switch operation {
+	case plugin.OperationTypeRead:
+		reqScopes = []string{"read:users", "read:roles"}
+	case plugin.OperationTypeWrite:
+		reqScopes = []string{"read:connections", "read:users", "create:users"}
+	case plugin.OperationTypeDelete:
+		reqScopes = []string{"delete:users"}
+	default:
+	}
+
+	scopes := strings.Split(result.Scope, " ")
+	matched := 0
+	for _, reqScope := range reqScopes {
+		for _, scope := range scopes {
+			if strings.EqualFold(reqScope, scope) {
+				matched++
+			}
+		}
+	}
+	if matched == len(reqScopes) {
+		return nil
+	}
+
+	return errors.Errorf("missing required scope(s), expected %q, actual: %q", reqScopes, scopes)
 }
