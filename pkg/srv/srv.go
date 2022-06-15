@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/config"
+	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/set"
 	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/transform"
 	api "github.com/aserto-dev/go-grpc/aserto/api/v1"
 	"github.com/aserto-dev/idp-plugin-sdk/plugin"
@@ -40,11 +41,13 @@ type Auth0Plugin struct {
 	wg           sync.WaitGroup
 	op           plugin.OperationType
 	setUsername  bool
+	scopes       *set.Set
 }
 
 func NewAuth0Plugin() *Auth0Plugin {
 	return &Auth0Plugin{
 		Config: &config.Auth0Config{},
+		scopes: set.New(),
 	}
 }
 
@@ -103,7 +106,11 @@ func (s *Auth0Plugin) Open(cfg plugin.Config, operation plugin.OperationType) er
 		s.connectionID = auth0.StringValue(c.ID)
 	}
 
-	if err := s.checkRequiredScopes(s.Config, operation); err != nil {
+	if err := s.getScopes(s.Config); err != nil {
+		return err
+	}
+
+	if err := s.checkRequiredScopes(operation); err != nil {
 		return err
 	}
 
@@ -368,6 +375,10 @@ func appendStats(plStats *plugin.Stats, auth0Stats map[string]interface{}) *plug
 }
 
 func (s *Auth0Plugin) getRoles(u *management.User, user *api.User) error {
+	if !s.scopes.Has("read:roles") {
+		return nil
+	}
+
 	page := 0
 	for {
 		opts := management.Page(page)
@@ -389,10 +400,7 @@ func (s *Auth0Plugin) getRoles(u *management.User, user *api.User) error {
 	return nil
 }
 
-func (s *Auth0Plugin) checkRequiredScopes(
-	c *config.Auth0Config,
-	operation plugin.OperationType,
-) error {
+func (s *Auth0Plugin) getScopes(c *config.Auth0Config) error {
 	client := http.DefaultClient
 
 	urlPath, err := url.Parse(fmt.Sprintf("https://%s/oauth/token/", c.Domain))
@@ -438,29 +446,40 @@ func (s *Auth0Plugin) checkRequiredScopes(
 		return err
 	}
 
+	splitScope := strings.Split(result.Scope, " ")
+	for _, scope := range splitScope {
+		s.scopes.Add(scope)
+	}
+
+	return nil
+}
+
+func (s *Auth0Plugin) checkRequiredScopes(operation plugin.OperationType) error {
 	var reqScopes []string
 	switch operation {
 	case plugin.OperationTypeRead:
-		reqScopes = []string{"read:users", "read:roles"}
+		reqScopes = []string{"read:users"}
 	case plugin.OperationTypeWrite:
 		reqScopes = []string{"read:connections", "read:users", "create:users"}
 	case plugin.OperationTypeDelete:
 		reqScopes = []string{"delete:users"}
 	default:
+		reqScopes = []string{}
 	}
 
-	scopes := strings.Split(result.Scope, " ")
 	matched := 0
 	for _, reqScope := range reqScopes {
-		for _, scope := range scopes {
-			if strings.EqualFold(reqScope, scope) {
-				matched++
-			}
+		if s.scopes.Has(reqScope) {
+			matched++
 		}
 	}
 	if matched == len(reqScopes) {
 		return nil
 	}
 
-	return errors.Errorf("missing required scope(s), expected %q, actual: %q", reqScopes, scopes)
+	return errors.Errorf(
+		"missing required scope(s), expected %q, actual: %s",
+		reqScopes,
+		s.scopes.String(),
+	)
 }
