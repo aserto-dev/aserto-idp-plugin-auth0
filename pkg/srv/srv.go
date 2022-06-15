@@ -2,23 +2,27 @@ package srv
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/config"
+	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/set"
 	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/transform"
 	api "github.com/aserto-dev/go-grpc/aserto/api/v1"
 	"github.com/aserto-dev/idp-plugin-sdk/plugin"
+
+	"github.com/auth0/go-auth0"
+	"github.com/auth0/go-auth0/management"
 	multierror "github.com/hashicorp/go-multierror"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"gopkg.in/auth0.v5"
-	"gopkg.in/auth0.v5/management"
 )
 
 const (
@@ -36,11 +40,14 @@ type Auth0Plugin struct {
 	connectionID string
 	wg           sync.WaitGroup
 	op           plugin.OperationType
+	setUsername  bool
+	scopes       *set.Set
 }
 
 func NewAuth0Plugin() *Auth0Plugin {
 	return &Auth0Plugin{
 		Config: &config.Auth0Config{},
+		scopes: set.New(),
 	}
 }
 
@@ -72,7 +79,8 @@ func (s *Auth0Plugin) Open(cfg plugin.Config, operation plugin.OperationType) er
 		management.WithClientCredentials(
 			auth0Config.ClientID,
 			auth0Config.ClientSecret,
-		))
+		),
+	)
 
 	if err != nil {
 		return nil
@@ -89,7 +97,21 @@ func (s *Auth0Plugin) Open(cfg plugin.Config, operation plugin.OperationType) er
 		if err != nil {
 			return err
 		}
+
+		// NOTE require username is only available when strategy == "auth0"
+		if options, ok := c.Options.(*management.ConnectionOptions); ok {
+			s.setUsername = options.GetRequiresUsername()
+		}
+
 		s.connectionID = auth0.StringValue(c.ID)
+	}
+
+	if err := s.getScopes(s.Config); err != nil {
+		return err
+	}
+
+	if err := s.checkRequiredScopes(operation); err != nil {
+		return err
 	}
 
 	return nil
@@ -124,6 +146,7 @@ func (s *Auth0Plugin) Read() ([]*api.User, error) {
 
 	for _, u := range ul.Users {
 		user := transform.Transform(u)
+		_ = s.getRoles(u, user)
 
 		users = append(users, user)
 	}
@@ -137,16 +160,19 @@ func (s *Auth0Plugin) Read() ([]*api.User, error) {
 
 func (s *Auth0Plugin) readByPID(id string) (*api.User, error) {
 
-	user, err := s.mgmt.User.Read(id)
+	u, err := s.mgmt.User.Read(id)
 	s.finishedRead = true
 	if err != nil {
 		return nil, err
 	}
-	if user == nil {
+	if u == nil {
 		return nil, fmt.Errorf("failed to get user by pid %s", id)
 	}
 
-	return transform.Transform(user), nil
+	user := transform.Transform(u)
+	_ = s.getRoles(u, user)
+
+	return user, nil
 }
 
 func (s *Auth0Plugin) readByEmail(email string) ([]*api.User, error) {
@@ -161,16 +187,18 @@ func (s *Auth0Plugin) readByEmail(email string) ([]*api.User, error) {
 		return nil, fmt.Errorf("failed to get user by email %s", email)
 	}
 
-	for _, user := range auth0Users {
-		apiUser := transform.Transform(user)
-		users = append(users, apiUser)
+	for _, u := range auth0Users {
+		user := transform.Transform(u)
+		_ = s.getRoles(u, user)
+
+		users = append(users, user)
 	}
 
 	return users, nil
 }
 
 func (s *Auth0Plugin) Write(user *api.User) error {
-	u := transform.ToAuth0(user)
+	u := transform.ToAuth0(user, s.setUsername)
 
 	userMap, size, err := structToMap(u)
 	if err != nil {
@@ -283,7 +311,10 @@ func structToMap(in interface{}) (map[string]interface{}, int64, error) {
 	return res, size, nil
 }
 
-func retrieveJobSummary(mngmt *management.Management, jobID string) (map[string]interface{}, error) {
+func retrieveJobSummary(
+	mngmt *management.Management,
+	jobID string,
+) (map[string]interface{}, error) {
 	job := &management.Job{}
 	req, err := mngmt.NewRequest("GET", mngmt.URI("jobs", jobID), job)
 
@@ -329,6 +360,7 @@ func appendStats(plStats *plugin.Stats, auth0Stats map[string]interface{}) *plug
 	if len(auth0Stats) == 0 {
 		return plStats
 	}
+
 	total, _ := auth0Stats["total"].(float64)
 	failed, _ := auth0Stats["failed"].(float64)
 	updated, _ := auth0Stats["updated"].(float64)
@@ -340,4 +372,114 @@ func appendStats(plStats *plugin.Stats, auth0Stats map[string]interface{}) *plug
 		Updated:  plStats.Updated + int32(updated),
 		Errors:   plStats.Errors + int32(failed),
 	}
+}
+
+func (s *Auth0Plugin) getRoles(u *management.User, user *api.User) error {
+	if !s.scopes.Has("read:roles") {
+		return nil
+	}
+
+	page := 0
+	for {
+		opts := management.Page(page)
+		rl, err := s.mgmt.User.Roles(*u.ID, opts)
+		if err != nil {
+			return err
+		}
+
+		for _, role := range rl.Roles {
+			user.Attributes.Roles = append(user.Attributes.Roles, *role.Name)
+		}
+
+		if !rl.HasNext() {
+			break
+		}
+		page++
+	}
+
+	return nil
+}
+
+func (s *Auth0Plugin) getScopes(c *config.Auth0Config) error {
+	client := http.DefaultClient
+
+	urlPath, err := url.Parse(fmt.Sprintf("https://%s/oauth/token/", c.Domain))
+	if err != nil {
+		return err
+	}
+
+	audience, err := url.Parse(fmt.Sprintf("https://%s/api/v2/", c.Domain))
+	if err != nil {
+		return err
+	}
+
+	data := url.Values{}
+	data.Add("grant_type", "client_credentials")
+	data.Add("client_id", c.ClientID)
+	data.Add("client_secret", c.ClientSecret)
+	data.Add("audience", audience.String())
+	encodedData := data.Encode()
+
+	req, err := http.NewRequest(http.MethodPost, urlPath.String(), strings.NewReader(encodedData))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("content-type", "application/x-www-form-urlencoded")
+	req.Header.Add("content-length", strconv.Itoa(len(encodedData)))
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	var result struct {
+		AccessToken string `json:"access_token"`
+		ExpiresIn   int    `json:"expires_in"`
+		Scope       string `json:"scope"`
+		TokenType   string `json:"token_type"`
+	}
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		return err
+	}
+
+	splitScope := strings.Split(result.Scope, " ")
+	for _, scope := range splitScope {
+		s.scopes.Add(scope)
+	}
+
+	return nil
+}
+
+func (s *Auth0Plugin) checkRequiredScopes(operation plugin.OperationType) error {
+	var reqScopes []string
+	switch operation {
+	case plugin.OperationTypeRead:
+		reqScopes = []string{"read:users"}
+	case plugin.OperationTypeWrite:
+		reqScopes = []string{"read:connections", "read:users", "create:users"}
+	case plugin.OperationTypeDelete:
+		reqScopes = []string{"delete:users"}
+	default:
+		reqScopes = []string{}
+	}
+
+	matched := 0
+	for _, reqScope := range reqScopes {
+		if s.scopes.Has(reqScope) {
+			matched++
+		}
+	}
+	if matched == len(reqScopes) {
+		return nil
+	}
+
+	return errors.Errorf(
+		"missing required scope(s), expected %q, actual: %s",
+		reqScopes,
+		s.scopes.String(),
+	)
 }

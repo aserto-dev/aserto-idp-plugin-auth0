@@ -4,8 +4,10 @@
         "hashicorp",
         "mgmt",
         "mngmt",
+        "multierror",
         "stretchr",
         "structpb",
-        "timestamppb"
+        "timestamppb",
+        "Upsert"
     ]
 }
