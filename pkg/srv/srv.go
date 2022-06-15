@@ -39,6 +39,7 @@ type Auth0Plugin struct {
 	connectionID string
 	wg           sync.WaitGroup
 	op           plugin.OperationType
+	setUsername  bool
 }
 
 func NewAuth0Plugin() *Auth0Plugin {
@@ -93,6 +94,12 @@ func (s *Auth0Plugin) Open(cfg plugin.Config, operation plugin.OperationType) er
 		if err != nil {
 			return err
 		}
+
+		// NOTE require username is only available when strategy == "auth0"
+		if options, ok := c.Options.(*management.ConnectionOptions); ok {
+			s.setUsername = options.GetRequiresUsername()
+		}
+
 		s.connectionID = auth0.StringValue(c.ID)
 	}
 
@@ -184,7 +191,7 @@ func (s *Auth0Plugin) readByEmail(email string) ([]*api.User, error) {
 }
 
 func (s *Auth0Plugin) Write(user *api.User) error {
-	u := transform.ToAuth0(user)
+	u := transform.ToAuth0(user, s.setUsername)
 
 	userMap, size, err := structToMap(u)
 	if err != nil {
@@ -297,7 +304,10 @@ func structToMap(in interface{}) (map[string]interface{}, int64, error) {
 	return res, size, nil
 }
 
-func retrieveJobSummary(mngmt *management.Management, jobID string) (map[string]interface{}, error) {
+func retrieveJobSummary(
+	mngmt *management.Management,
+	jobID string,
+) (map[string]interface{}, error) {
 	job := &management.Job{}
 	req, err := mngmt.NewRequest("GET", mngmt.URI("jobs", jobID), job)
 
@@ -379,7 +389,10 @@ func (s *Auth0Plugin) getRoles(u *management.User, user *api.User) error {
 	return nil
 }
 
-func (s *Auth0Plugin) checkRequiredScopes(c *config.Auth0Config, operation plugin.OperationType) error {
+func (s *Auth0Plugin) checkRequiredScopes(
+	c *config.Auth0Config,
+	operation plugin.OperationType,
+) error {
 	client := http.DefaultClient
 
 	urlPath, err := url.Parse(fmt.Sprintf("https://%s/oauth/token/", c.Domain))
