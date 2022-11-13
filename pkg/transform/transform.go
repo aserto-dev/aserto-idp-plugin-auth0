@@ -4,18 +4,18 @@ import (
 	"strings"
 
 	api "github.com/aserto-dev/go-grpc/aserto/api/v1"
+
+	"github.com/auth0/go-auth0"
+	"github.com/auth0/go-auth0/management"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"gopkg.in/auth0.v5"
-	"gopkg.in/auth0.v5/management"
 )
 
 const (
 	Provider = "auth0"
 )
 
-func ToAuth0(in *api.User) *management.User {
+func ToAuth0(in *api.User, setUsername bool) *management.User {
 	user := management.User{
 		ID:       auth0.String(in.Id),
 		Nickname: auth0.String(in.DisplayName),
@@ -27,10 +27,12 @@ func ToAuth0(in *api.User) *management.User {
 		user.UserMetadata = in.Attributes.Properties.AsMap()
 	}
 
-	for key, value := range in.Identities {
-		if value.Kind == api.IdentityKind_IDENTITY_KIND_USERNAME {
-			user.Username = auth0.String(key)
-			break
+	if setUsername {
+		for key, value := range in.Identities {
+			if value.Kind == api.IdentityKind_IDENTITY_KIND_USERNAME {
+				user.Username = auth0.String(key)
+				break
+			}
 		}
 	}
 
