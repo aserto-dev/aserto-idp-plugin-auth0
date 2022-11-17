@@ -5,10 +5,10 @@ import (
 	"time"
 
 	api "github.com/aserto-dev/go-grpc/aserto/api/v1"
+	"github.com/auth0/go-auth0"
+	"github.com/auth0/go-auth0/management"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"gopkg.in/auth0.v5"
-	"gopkg.in/auth0.v5/management"
 )
 
 func CreateTestAPIUser(id, displayName, email, picture string) *api.User {
@@ -45,7 +45,7 @@ func CreateTestAuth0User(id, displayName, email, picture, phoneNo, userName stri
 		Nickname:     auth0.String(displayName),
 		Email:        auth0.String(email),
 		Picture:      auth0.String(picture),
-		UserMetadata: metadata,
+		UserMetadata: &metadata,
 	}
 
 	return &user

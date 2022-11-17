@@ -1,14 +1,15 @@
-package srv
+package srv_test
 
 import (
 	"io"
 	"testing"
 
 	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/config"
+	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/srv"
 	auth0TestUtils "github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/testutils"
 	"github.com/aserto-dev/go-grpc/aserto/api/v1"
-	"github.com/aserto-dev/go-utils/testutil"
 	"github.com/aserto-dev/idp-plugin-sdk/plugin"
+	"github.com/aserto-dev/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,7 +28,7 @@ func TestOpen(t *testing.T) {
 	err := cfg.Validate(plugin.OperationTypeRead)
 	assert.Nil(err)
 
-	auth0Plugin := NewAuth0Plugin()
+	auth0Plugin := srv.NewAuth0Plugin()
 	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
 	assert.Nil(err)
 
@@ -44,7 +45,7 @@ func TestWrite(t *testing.T) {
 	err := cfg.Validate(plugin.OperationTypeWrite)
 	assert.Nil(err)
 
-	auth0Plugin := NewAuth0Plugin()
+	auth0Plugin := srv.NewAuth0Plugin()
 	err = auth0Plugin.Open(&cfg, plugin.OperationTypeWrite)
 	assert.Nil(err)
 
@@ -67,7 +68,7 @@ func TestReadInvalidUserID(t *testing.T) {
 	err := cfg.Validate(plugin.OperationTypeRead)
 	assert.Nil(err)
 
-	auth0Plugin := NewAuth0Plugin()
+	auth0Plugin := srv.NewAuth0Plugin()
 	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
 	assert.Nil(err)
 
@@ -92,7 +93,7 @@ func TestReadUserByID(t *testing.T) {
 	err := cfg.Validate(plugin.OperationTypeRead)
 	assert.Nil(err)
 
-	auth0Plugin := NewAuth0Plugin()
+	auth0Plugin := srv.NewAuth0Plugin()
 	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
 	assert.Nil(err)
 
@@ -119,7 +120,7 @@ func TestReadInvalidUserEmail(t *testing.T) {
 	err := cfg.Validate(plugin.OperationTypeRead)
 	assert.Nil(err)
 
-	auth0Plugin := NewAuth0Plugin()
+	auth0Plugin := srv.NewAuth0Plugin()
 	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
 	assert.Nil(err)
 
@@ -144,7 +145,7 @@ func TestReadUserByEmail(t *testing.T) {
 	err := cfg.Validate(plugin.OperationTypeRead)
 	assert.Nil(err)
 
-	auth0Plugin := NewAuth0Plugin()
+	auth0Plugin := srv.NewAuth0Plugin()
 	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
 	assert.Nil(err)
 
@@ -170,7 +171,7 @@ func TestRead(t *testing.T) {
 	err := cfg.Validate(plugin.OperationTypeRead)
 	assert.Nil(err)
 
-	auth0Plugin := NewAuth0Plugin()
+	auth0Plugin := srv.NewAuth0Plugin()
 	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
 	assert.Nil(err)
 
@@ -194,7 +195,7 @@ func TestDelete(t *testing.T) {
 	err := cfg.Validate(plugin.OperationTypeRead)
 	assert.Nil(err)
 
-	auth0Plugin := NewAuth0Plugin()
+	auth0Plugin := srv.NewAuth0Plugin()
 	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
 	assert.Nil(err)
 

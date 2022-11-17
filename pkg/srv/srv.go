@@ -14,11 +14,11 @@ import (
 	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/transform"
 	api "github.com/aserto-dev/go-grpc/aserto/api/v1"
 	"github.com/aserto-dev/idp-plugin-sdk/plugin"
+	"github.com/auth0/go-auth0"
+	"github.com/auth0/go-auth0/management"
 	multierror "github.com/hashicorp/go-multierror"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"gopkg.in/auth0.v5"
-	"gopkg.in/auth0.v5/management"
 )
 
 const (

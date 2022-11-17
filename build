@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+rm -f $HOME/.aserto/idpplugins/aserto-idp-plugin-auth0
+
+mage build
+
+ln -s \
+$PWD/dist/aserto-idp-plugin-auth0_darwin_arm64/aserto-idp-plugin-auth0 \
+$HOME/.aserto/idpplugins/aserto-idp-plugin-auth0
+

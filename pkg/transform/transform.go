@@ -4,15 +4,21 @@ import (
 	"strings"
 
 	api "github.com/aserto-dev/go-grpc/aserto/api/v1"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"gopkg.in/auth0.v5"
-	"gopkg.in/auth0.v5/management"
+	"github.com/auth0/go-auth0"
+	"github.com/auth0/go-auth0/management"
 )
 
 const (
 	Provider = "auth0"
+)
+
+var (
+	phoneProp    = strings.ToLower(api.IdentityKind_IDENTITY_KIND_PHONE.String())
+	usernameProp = strings.ToLower(api.IdentityKind_IDENTITY_KIND_USERNAME.String())
 )
 
 func ToAuth0(in *api.User) *management.User {
@@ -24,7 +30,8 @@ func ToAuth0(in *api.User) *management.User {
 	}
 
 	if in.Attributes != nil && in.Attributes.Properties != nil {
-		user.UserMetadata = in.Attributes.Properties.AsMap()
+		props := in.Attributes.Properties.AsMap()
+		user.UserMetadata = &props
 	}
 
 	for key, value := range in.Identities {
@@ -37,10 +44,13 @@ func ToAuth0(in *api.User) *management.User {
 	return &user
 }
 
-// Transform Auth0 user definition into Aserto Edge User object definition.
+// Transform Auth0 management user into an Aserto v1 User instance.
 func Transform(in *management.User) *api.User {
 
 	uid := strings.ToLower(strings.TrimPrefix(*in.ID, "auth0|"))
+	if !isValidID(uid) {
+		uid = ""
+	}
 
 	user := api.User{
 		Id:          uid,
@@ -72,32 +82,47 @@ func Transform(in *management.User) *api.User {
 		Verified: in.GetEmailVerified(),
 	}
 
-	phoneProp := strings.ToLower(api.IdentityKind_IDENTITY_KIND_PHONE.String())
-	if in.UserMetadata[phoneProp] != nil {
-		phone := in.UserMetadata[phoneProp].(string)
-		user.Identities[phone] = &api.IdentitySource{
-			Kind:     api.IdentityKind_IDENTITY_KIND_PHONE,
-			Provider: Provider,
-			Verified: false,
-		}
-	}
-
-	usernameProp := strings.ToLower(api.IdentityKind_IDENTITY_KIND_USERNAME.String())
-	if in.UserMetadata[usernameProp] != nil {
-		username := in.UserMetadata[usernameProp].(string)
-		user.Identities[username] = &api.IdentitySource{
+	if in.Username != nil {
+		user.Identities[in.GetUsername()] = &api.IdentitySource{
 			Kind:     api.IdentityKind_IDENTITY_KIND_USERNAME,
 			Provider: Provider,
-			Verified: false,
+			Verified: true,
 		}
 	}
 
-	if in.UserMetadata != nil && len(in.UserMetadata) != 0 {
-		props, err := structpb.NewStruct(in.UserMetadata)
-		if err == nil {
-			user.Attributes.Properties = props
+	if in.UserMetadata != nil {
+
+		if (*in.UserMetadata)[phoneProp] != nil {
+			phone := (*in.UserMetadata)[phoneProp].(string)
+			user.Identities[phone] = &api.IdentitySource{
+				Kind:     api.IdentityKind_IDENTITY_KIND_PHONE,
+				Provider: Provider,
+				Verified: false,
+			}
 		}
+
+		if (*in.UserMetadata)[usernameProp] != nil && in.Username == nil {
+			username := (*in.UserMetadata)[usernameProp].(string)
+			user.Identities[username] = &api.IdentitySource{
+				Kind:     api.IdentityKind_IDENTITY_KIND_USERNAME,
+				Provider: Provider,
+				Verified: false,
+			}
+		}
+
+		if len(*in.UserMetadata) != 0 {
+			props, err := structpb.NewStruct(*in.UserMetadata)
+			if err == nil {
+				user.Attributes.Properties = props
+			}
+		}
+
 	}
 
 	return &user
+}
+
+func isValidID(id string) bool {
+	_, err := uuid.Parse(id)
+	return err == nil
 }
