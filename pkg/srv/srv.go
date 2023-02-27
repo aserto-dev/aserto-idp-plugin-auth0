@@ -123,7 +123,7 @@ func (s *Auth0Plugin) Read() ([]*api.User, error) {
 	}
 
 	for _, u := range ul.Users {
-		user := transform.Transform(u)
+		user := transform.Transform(u, transform.WithUserID())
 
 		users = append(users, user)
 	}
@@ -146,7 +146,7 @@ func (s *Auth0Plugin) readByPID(id string) (*api.User, error) {
 		return nil, fmt.Errorf("failed to get user by pid %s", id)
 	}
 
-	return transform.Transform(user), nil
+	return transform.Transform(user, transform.WithUserID()), nil
 }
 
 func (s *Auth0Plugin) readByEmail(email string) ([]*api.User, error) {
@@ -162,7 +162,7 @@ func (s *Auth0Plugin) readByEmail(email string) ([]*api.User, error) {
 	}
 
 	for _, user := range auth0Users {
-		apiUser := transform.Transform(user)
+		apiUser := transform.Transform(user, transform.WithUserID())
 		users = append(users, apiUser)
 	}
 
@@ -170,7 +170,7 @@ func (s *Auth0Plugin) readByEmail(email string) ([]*api.User, error) {
 }
 
 func (s *Auth0Plugin) Write(user *api.User) error {
-	u := transform.ToAuth0(user)
+	u := transform.ToAuth0(user, transform.WithUserID())
 
 	userMap, size, err := structToMap(u)
 	if err != nil {
