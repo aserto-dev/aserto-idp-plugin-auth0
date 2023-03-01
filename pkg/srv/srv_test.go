@@ -90,20 +90,21 @@ func TestReadUserByID(t *testing.T) {
 	cfg := CreateConfig()
 	cfg.UserPID = "2ff319e101e1"
 	err := cfg.Validate(plugin.OperationTypeRead)
-	assert.Nil(err)
+	assert.NoError(err)
 
 	auth0Plugin := NewAuth0Plugin()
 	err = auth0Plugin.Open(&cfg, plugin.OperationTypeRead)
 	assert.Nil(err)
 
 	users, err := auth0Plugin.Read()
-	assert.Nil(err)
+	assert.NoError(err)
 	assert.Equal(1, len(users))
-	assert.Equal(users[0].GetId(), "2ff319e101e1")
+	assert.Empty(users[0].GetId())
 	assert.Equal(users[0].GetDisplayName(), "Test User")
+	assert.Contains(users[0].Identities, cfg.UserPID)
 
 	_, err = auth0Plugin.Read()
-	assert.NotNil(err)
+	assert.Error(err)
 	assert.Equal(io.EOF, err)
 
 	stats, err := auth0Plugin.Close()
@@ -218,7 +219,16 @@ func TestDelete(t *testing.T) {
 	err = auth0Plugin.Open(&cfg, plugin.OperationTypeDelete)
 	assert.Nil(err)
 
-	err = auth0Plugin.Delete("auth0|" + testUser.Id)
+	pid := ""
+	for id, src := range testUser.Identities {
+		if src.Kind == api.IdentityKind_IDENTITY_KIND_PID {
+			pid = id
+			break
+		}
+	}
+	assert.NotEmpty(pid)
+
+	err = auth0Plugin.Delete(pid)
 	assert.Nil(err)
 
 	stats, err = auth0Plugin.Close()

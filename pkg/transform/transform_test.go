@@ -39,25 +39,9 @@ func TestTransform(t *testing.T) {
 	assert := require.New(t)
 	auth0User := auth0TestUtils.CreateTestAuth0User("1", "Name", "email", "pic", "+40722332233", "userName")
 
-	apiUser := Transform(auth0User, WithUserID())
-
-	assert.Equal("1", apiUser.Id, "should correctly populate the id")
-	assert.Equal("Name", apiUser.DisplayName, "should correctly detect the displayname")
-	assert.Equal("email", apiUser.Email, "should correctly populate the email")
-	assert.Equal("pic", apiUser.Picture, "should correctly populate the email")
-	assert.Equal(4, len(apiUser.Identities))
-	assert.Equal("auth0", apiUser.Identities["userName"].Provider)
-	assert.False(apiUser.Identities["userName"].Verified)
-	assert.Equal("+40722332233", apiUser.Attributes.Properties.Fields["phoneNumber"].GetStringValue())
-}
-
-func TestTransformNoID(t *testing.T) {
-	assert := require.New(t)
-	auth0User := auth0TestUtils.CreateTestAuth0User("1", "Name", "email", "pic", "+40722332233", "userName")
-
 	apiUser := Transform(auth0User)
 
-	assert.Equal("", apiUser.Id, "should not populate the id")
+	assert.Empty(apiUser.Id, "should not populate the id")
 	assert.Equal("Name", apiUser.DisplayName, "should correctly detect the displayname")
 	assert.Equal("email", apiUser.Email, "should correctly populate the email")
 	assert.Equal("pic", apiUser.Picture, "should correctly populate the email")
