@@ -47,13 +47,7 @@ func ToAuth0(in *api.User, args ...Option) *management.User {
 }
 
 // Transform Auth0 user definition into Aserto Edge User object definition.
-func Transform(in *management.User, args ...Option) *api.User {
-	opts := &transformOptions{}
-
-	for _, arg := range args {
-		arg(opts)
-	}
-
+func Transform(in *management.User) *api.User {
 	user := api.User{
 		DisplayName: in.GetNickname(),
 		Email:       in.GetEmail(),
@@ -69,11 +63,6 @@ func Transform(in *management.User, args ...Option) *api.User {
 			CreatedAt: timestamppb.New(in.GetCreatedAt()),
 			UpdatedAt: timestamppb.New(in.GetUpdatedAt()),
 		},
-	}
-
-	if opts.userID {
-		uid := strings.ToLower(strings.TrimPrefix(*in.ID, "auth0|"))
-		user.Id = uid
 	}
 
 	user.Identities[in.GetID()] = &api.IdentitySource{
