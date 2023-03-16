@@ -1,10 +1,11 @@
-package transform
+package transform_test
 
 import (
 	"reflect"
 	"testing"
 
 	auth0TestUtils "github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/testutils"
+	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/transform"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/auth0.v5/management"
 )
@@ -13,7 +14,7 @@ func TestTransformToAuth0(t *testing.T) {
 	assert := require.New(t)
 	apiUser := auth0TestUtils.CreateTestAPIUser("1", "Name", "email", "pic")
 
-	auth0User := ToAuth0(apiUser, WithUserID())
+	auth0User := transform.ToAuth0(apiUser, transform.WithUserID())
 
 	assert.True(reflect.TypeOf(*auth0User) == reflect.TypeOf(management.User{}), "the returned object should be *management.User")
 	assert.Equal("Name", (*auth0User).GetNickname(), "should correctly detect the nickname")
@@ -26,7 +27,7 @@ func TestTransformToAuth0NoID(t *testing.T) {
 	assert := require.New(t)
 	apiUser := auth0TestUtils.CreateTestAPIUser("1", "Name", "email", "pic")
 
-	auth0User := ToAuth0(apiUser)
+	auth0User := transform.ToAuth0(apiUser)
 
 	assert.True(reflect.TypeOf(*auth0User) == reflect.TypeOf(management.User{}), "the returned object should be *management.User")
 	assert.Equal("Name", (*auth0User).GetNickname(), "should correctly detect the nickname")
@@ -39,7 +40,7 @@ func TestTransform(t *testing.T) {
 	assert := require.New(t)
 	auth0User := auth0TestUtils.CreateTestAuth0User("1", "Name", "email", "pic", "+40722332233", "userName")
 
-	apiUser := Transform(auth0User)
+	apiUser := transform.Transform(auth0User)
 
 	assert.Empty(apiUser.Id, "should not populate the id")
 	assert.Equal("Name", apiUser.DisplayName, "should correctly detect the displayname")

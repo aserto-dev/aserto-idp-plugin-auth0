@@ -7,7 +7,7 @@ import (
 	"gopkg.in/auth0.v5/management"
 )
 
-// values set by linker using ldflag -X
+// values set by linker using ldflag -X.
 var (
 	ver    string // nolint:gochecknoglobals // set by linker
 	date   string // nolint:gochecknoglobals // set by linker
