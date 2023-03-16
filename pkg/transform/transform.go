@@ -86,7 +86,6 @@ func Transform(in *management.User) *api.User {
 
 	phoneProp := strings.ToLower(api.IdentityKind_IDENTITY_KIND_PHONE.String())
 	if phone, ok := userMetadata[phoneProp].(string); ok {
-		// phone := userMetadata[phoneProp].(string)
 		user.Identities[phone] = &api.IdentitySource{
 			Kind:     api.IdentityKind_IDENTITY_KIND_PHONE,
 			Provider: Provider,
@@ -96,7 +95,6 @@ func Transform(in *management.User) *api.User {
 
 	usernameProp := strings.ToLower(api.IdentityKind_IDENTITY_KIND_USERNAME.String())
 	if username, ok := userMetadata[usernameProp].(string); ok {
-		// username := userMetadata[usernameProp].(string)
 		user.Identities[username] = &api.IdentitySource{
 			Kind:     api.IdentityKind_IDENTITY_KIND_USERNAME,
 			Provider: Provider,
