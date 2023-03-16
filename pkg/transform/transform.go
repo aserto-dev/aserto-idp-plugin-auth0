@@ -4,11 +4,11 @@ import (
 	"strings"
 
 	api "github.com/aserto-dev/go-grpc/aserto/api/v1"
+
+	"github.com/auth0/go-auth0"
+	"github.com/auth0/go-auth0/management"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"gopkg.in/auth0.v5"
-	"gopkg.in/auth0.v5/management"
 )
 
 const (
@@ -29,7 +29,8 @@ func ToAuth0(in *api.User, args ...Option) *management.User {
 	}
 
 	if in.Attributes != nil && in.Attributes.Properties != nil {
-		user.UserMetadata = in.Attributes.Properties.AsMap()
+		properties := in.Attributes.Properties.AsMap()
+		user.UserMetadata = &properties
 	}
 
 	for key, value := range in.Identities {
@@ -77,9 +78,14 @@ func Transform(in *management.User) *api.User {
 		Verified: in.GetEmailVerified(),
 	}
 
+	if in.UserMetadata == nil {
+		return &user
+	}
+
+	userMetadata := *in.UserMetadata
+
 	phoneProp := strings.ToLower(api.IdentityKind_IDENTITY_KIND_PHONE.String())
-	if in.UserMetadata[phoneProp] != nil {
-		phone := in.UserMetadata[phoneProp].(string)
+	if phone, ok := userMetadata[phoneProp].(string); ok {
 		user.Identities[phone] = &api.IdentitySource{
 			Kind:     api.IdentityKind_IDENTITY_KIND_PHONE,
 			Provider: Provider,
@@ -88,8 +94,7 @@ func Transform(in *management.User) *api.User {
 	}
 
 	usernameProp := strings.ToLower(api.IdentityKind_IDENTITY_KIND_USERNAME.String())
-	if in.UserMetadata[usernameProp] != nil {
-		username := in.UserMetadata[usernameProp].(string)
+	if username, ok := userMetadata[usernameProp].(string); ok {
 		user.Identities[username] = &api.IdentitySource{
 			Kind:     api.IdentityKind_IDENTITY_KIND_USERNAME,
 			Provider: Provider,
@@ -97,8 +102,8 @@ func Transform(in *management.User) *api.User {
 		}
 	}
 
-	if in.UserMetadata != nil && len(in.UserMetadata) != 0 {
-		props, err := structpb.NewStruct(in.UserMetadata)
+	if in.UserMetadata != nil && len(userMetadata) != 0 {
+		props, err := structpb.NewStruct(userMetadata)
 		if err == nil {
 			user.Attributes.Properties = props
 		}

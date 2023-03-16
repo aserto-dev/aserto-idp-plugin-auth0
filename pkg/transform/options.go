@@ -6,7 +6,7 @@ type transformOptions struct {
 	userID bool
 }
 
-// Also pass user id when transforming object
+// Also pass user id when transforming object.
 func WithUserID() Option {
 	return func(o *transformOptions) {
 		o.userID = true

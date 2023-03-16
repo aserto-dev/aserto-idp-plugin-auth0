@@ -4,6 +4,7 @@
         "hashicorp",
         "mgmt",
         "mngmt",
+        "protobuf",
         "stretchr",
         "structpb",
         "timestamppb"
