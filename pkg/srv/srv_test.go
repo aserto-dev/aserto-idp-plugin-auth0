@@ -8,8 +8,9 @@ import (
 	"github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/srv"
 	auth0TestUtils "github.com/aserto-dev/aserto-idp-plugin-auth0/pkg/testutils"
 	"github.com/aserto-dev/go-grpc/aserto/api/v1"
-	"github.com/aserto-dev/go-utils/testutil"
 	"github.com/aserto-dev/idp-plugin-sdk/plugin"
+	"github.com/aserto-dev/testutil"
+
 	"github.com/stretchr/testify/require"
 )
 

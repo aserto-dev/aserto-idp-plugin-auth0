@@ -2,9 +2,10 @@ package config
 
 import (
 	"github.com/aserto-dev/idp-plugin-sdk/plugin"
+
+	"github.com/auth0/go-auth0/management"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"gopkg.in/auth0.v5/management"
 )
 
 // values set by linker using ldflag -X.
